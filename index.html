@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extrator de Exames - HCMED</title>
+    <title>Exames HCMED</title>
     <meta name="description"
         content="Ferramenta para extrair e organizar resultados de exames laboratoriais do sistema HCMED">
     <link rel="stylesheet" href="styles.css">
@@ -19,49 +19,27 @@
     <div class="container">
         <header class="header">
             <div class="logo">
-                <span class="logo-icon">🧪</span>
-                <h1>Extrator de Exames</h1>
+                <h1>Exames HCMED</h1>
             </div>
-            <p class="subtitle">Cole os dados do HCMED e obtenha um resumo organizado</p>
         </header>
 
         <main class="main-content">
             <!-- Input Section -->
             <section class="card input-section">
                 <div class="card-header">
-                    <h2>📋 Dados dos Exames</h2>
+                    <h2>Dados dos Exames</h2>
                     <button class="btn btn-secondary btn-small" id="clearBtn">
-                        <span class="btn-icon">🗑️</span>
                         Limpar
                     </button>
                 </div>
                 <div class="card-body">
-                    <div class="instructions">
-                        <div class="instruction-step">
-                            <span class="step-number">1</span>
-                            <span>Abra os exames no HCMED</span>
-                        </div>
-                        <div class="instruction-step">
-                            <span class="step-number">2</span>
-                            <span>Pressione <kbd>Ctrl</kbd> + <kbd>A</kbd> para selecionar tudo</span>
-                        </div>
-                        <div class="instruction-step">
-                            <span class="step-number">3</span>
-                            <span>Pressione <kbd>Ctrl</kbd> + <kbd>C</kbd> para copiar</span>
-                        </div>
-                        <div class="instruction-step">
-                            <span class="step-number">4</span>
-                            <span>Cole na caixa abaixo</span>
-                        </div>
-                    </div>
+
                     <textarea id="inputData" placeholder="Cole os dados dos exames aqui..." rows="10"></textarea>
                     <div class="button-group">
                         <button class="btn btn-primary btn-large" id="processBtn">
-                            <span class="btn-icon">⚡</span>
-                            Processar Exames
+                            Organizar
                         </button>
                         <button class="btn btn-secondary btn-large" id="tableBtn">
-                            <span class="btn-icon">📊</span>
                             Gerar Tabela
                         </button>
                     </div>
@@ -71,17 +49,15 @@
             <!-- Output Section -->
             <section class="card output-section" id="outputSection">
                 <div class="card-header">
-                    <h2>📊 Resultado</h2>
+                    <h2>Resultado</h2>
                     <button class="btn btn-success btn-small" id="copyBtn">
-                        <span class="btn-icon">📋</span>
                         Copiar
                     </button>
                 </div>
                 <div class="card-body">
                     <div class="result-placeholder" id="resultPlaceholder">
-                        <span class="placeholder-icon">📝</span>
                         <p>Nenhum resultado ainda.</p>
-                        <p class="placeholder-hint">Cole os dados dos exames e clique em "Processar" para visualizar o
+                        <p class="placeholder-hint">Cole os dados dos exames e clique em "Organizar" para visualizar o
                             resumo.</p>
                     </div>
                     <pre class="result-content" id="resultContent"></pre>
@@ -91,14 +67,12 @@
             <!-- Table Section -->
             <section class="card table-section" id="tableSection" style="display: none;">
                 <div class="card-header">
-                    <h2>📋 Tabela de Exames</h2>
+                    <h2>Tabela de Exames</h2>
                     <div class="header-controls">
                         <button class="btn btn-secondary btn-small" id="toggleOrderBtn">
-                            <span class="btn-icon">🔄</span>
                             <span id="orderLabel">Antigo → Recente</span>
                         </button>
                         <button class="btn btn-success btn-small" id="copyTableBtn">
-                            <span class="btn-icon">📋</span>
                             Copiar Tabela
                         </button>
                     </div>
@@ -113,7 +87,7 @@
             <!-- Stats Section -->
             <section class="card stats-section" id="statsSection" style="display: none;">
                 <div class="card-header">
-                    <h2>📈 Estatísticas</h2>
+                    <h2>Estatísticas</h2>
                 </div>
                 <div class="card-body">
                     <div class="stats-grid">
@@ -130,14 +104,11 @@
             </section>
         </main>
 
-        <footer class="footer">
-            <p>Feito para facilitar a vida do residente 💪</p>
-        </footer>
+
     </div>
 
     <!-- Toast Notification -->
     <div class="toast" id="toast">
-        <span class="toast-icon">✅</span>
         <span class="toast-message">Copiado para a área de transferência!</span>
     </div>
 
