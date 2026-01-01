@@ -23,10 +23,16 @@ const EXAM_MAPPINGS = {
     'CREATININA': { abbrev: 'Cr', category: 'gerais', unit: 'mg/dL' },
     'URÉIA': { abbrev: 'Ur', category: 'gerais', unit: 'mg/dL' },
     'UREIA': { abbrev: 'Ur', category: 'gerais', unit: 'mg/dL' },
+    'URÉIA SÉRICA': { abbrev: 'Ur', category: 'gerais', unit: 'mg/dL' },
+    'UREIA SERICA': { abbrev: 'Ur', category: 'gerais', unit: 'mg/dL' },
     'SÓDIO': { abbrev: 'Na', category: 'gerais', unit: 'mEq/L' },
     'SODIO': { abbrev: 'Na', category: 'gerais', unit: 'mEq/L' },
+    'SÓDIO SÉRICO': { abbrev: 'Na', category: 'gerais', unit: 'mEq/L' },
+    'SODIO SERICO': { abbrev: 'Na', category: 'gerais', unit: 'mEq/L' },
     'POTÁSSIO': { abbrev: 'K', category: 'gerais', unit: 'mEq/L' },
     'POTASSIO': { abbrev: 'K', category: 'gerais', unit: 'mEq/L' },
+    'POTÁSSIO SÉRICO': { abbrev: 'K', category: 'gerais', unit: 'mEq/L' },
+    'POTASSIO SERICO': { abbrev: 'K', category: 'gerais', unit: 'mEq/L' },
     'CLORO': { abbrev: 'Cl', category: 'gerais', unit: 'mEq/L' },
     'CÁLCIO TOTAL': { abbrev: 'Ca', category: 'gerais', unit: 'mg/dL' },
     'CÁLCIO IÔNICO': { abbrev: 'CaI', category: 'gerais', unit: 'mg/dL' },
@@ -220,8 +226,8 @@ const EXAM_MAPPINGS = {
     // LCR
     'PROTEÍNA TOTAL LCR': { abbrev: 'PT', category: 'lcr' },
     'PROTEÍNAS TOTAIS LCR': { abbrev: 'PT', category: 'lcr' },
-    'GLICOSE LCR': { abbrev: 'Glic', category: 'lcr' },
-    'GLICORRAQUIA': { abbrev: 'Glic', category: 'lcr' },
+    'GLICOSE LCR': { abbrev: 'Glico', category: 'lcr' },
+    'GLICORRAQUIA': { abbrev: 'Glico', category: 'lcr' },
     'LACTATO LCR': { abbrev: 'Lac', category: 'lcr' },
     'ADA LCR': { abbrev: 'ADA', category: 'lcr' },
     'ADENOSINA DEAMINASE': { abbrev: 'ADA', category: 'lcr' },
@@ -236,12 +242,159 @@ const EXAM_MAPPINGS = {
     'ELETROFORESE LCR': { abbrev: 'EFP', category: 'lcr' },
 };
 
+// ===== VALORES DE REFERÊNCIA =====
+const REFERENCE_VALUES = {
+    // Hemograma
+    'Hb': { min: 12.5, max: 15.5 },
+    'Ht': { min: 36, max: 48 },
+    'VCM': { min: 80, max: 95 },
+    'Leuco': { min: 4.0, max: 11.0 },
+    'Plaq': { min: 162, max: 425 },
+
+    // Renal/Eletrólitos
+    'Cr': { max: 1.2 },
+    'Ur': { max: 50 },
+    'Na': { min: 136, max: 145 },
+    'K': { min: 3.5, max: 5.1 },
+    'Mg': { min: 1.6, max: 2.6 },
+    'P': { min: 2.3, max: 4.7 },
+    'Cl': { min: 98, max: 107 },
+    'Ca': { min: 8.4, max: 10.2 },
+    'CaI': { min: 4.49, max: 5.29 },
+
+    // Hepáticos
+    'TGO': { max: 34 },
+    'TGP': { max: 45 },
+    'BT': { max: 1.2 },
+    'BD': { max: 0.5 },
+    'FA': { max: 129 },
+    'GGT': { max: 64 },
+    'AMIL': { max: 100 },
+    'LIP': { min: 4, max: 60 },
+    'ALB': { min: 3.5, max: 5 },
+    'PT': { min: 6.4, max: 8.3 },
+
+    // Coagulação
+    'INR': { min: 0.95, max: 1.2 },
+    'R': { min: 0.89, max: 1.19 },
+    'DD': { max: 500 },
+    'Fibrinogênio': { min: 200, max: 393 },
+
+    // Gasometria Venosa
+    'GV.pH': { min: 7.35, max: 7.45 },
+    'GV.pCO2': { min: 35, max: 45 },
+    'GV.BIC': { min: 22, max: 29 },
+    'GV.LAC': { max: 2.0 },
+
+    // Gasometria Arterial
+    'GA.pH': { min: 7.35, max: 7.45 },
+    'GA.pO2': { min: 75, max: 105 },
+    'GA.pCO2': { min: 35, max: 45 },
+    'GA.BIC': { min: 22, max: 28 },
+    'GA.LAC': { max: 2.0 },
+    'GA.SO2': { min: 95 },
+
+    // Inflamatórios
+    'PCR': { max: 5 },
+    'VHS': { max: 20 },
+
+    // Metabólico
+    'Glic': { min: 70, max: 99 },
+    'HbGlic': { max: 6 },
+    'Trig': { max: 175 },
+    'ColT': { max: 190 },
+    'HDL': { min: 40 },
+    'LDL': { max: 100 },
+    'VLDL': { max: 35 },
+    'DHL': { min: 125, max: 220 },
+
+    // Tireoide
+    'TSH': { min: 0.35, max: 4.94 },
+    'T4L': { min: 0.70, max: 1.48 },
+
+    // Vitaminas/Nutrientes
+    'VitD': { min: 30, max: 100 },
+    'B12': { min: 187, max: 883 },
+    'AF': { min: 3.1, max: 20.5 },
+    'Fe': { min: 50, max: 175 },
+    'Ferritina': { min: 21, max: 270 },
+
+    // Níveis Séricos de Drogas
+    'VPA': { min: 50, max: 100 },
+    'PHT': { min: 10, max: 20 },
+    'LEV': { min: 12, max: 46 },
+    'CBZ': { min: 4, max: 12 },
+    'PB': { min: 15, max: 40 },
+
+    // Cardio
+    'Tropo-T': { max: 14 },
+    'NT-proBNP': { max: 125 },
+    'CPK': { min: 30, max: 200 },
+
+    // Outros
+    'PTH': { min: 15, max: 68 },
+    'Cortisol': { min: 6.7, max: 22.6 },
+
+    // LCR (valores específicos para líquor - diferentes dos séricos)
+    'Cel': { max: 4 },
+    'Hem': { max: 0 },
+    'Glico': { min: 50, max: 70 },  // Glicose LCR
+    'Lac': { min: 1.1, max: 2.4 },  // Lactato LCR
+
+    // Complemento
+    'C3': { min: 82, max: 193 },
+    'C4': { min: 13, max: 44 },
+
+    // Imunoglobulinas
+    'IgA': { min: 69, max: 500 },
+    'IgG': { min: 540, max: 1822 },
+    'IgM': { min: 22, max: 293 },
+};
+
+/**
+ * Verifica se um valor está fora do intervalo de referência
+ * @param {string} examName - Nome/abreviatura do exame
+ * @param {string|number} value - Valor do exame
+ * @returns {boolean} - true se o valor está alterado, false se normal ou não há referência
+ */
+function isAbnormal(examName, value) {
+    const ref = REFERENCE_VALUES[examName];
+    if (!ref) return false;
+
+    // Trata valores qualitativos
+    if (typeof value === 'string') {
+        // Valores qualitativos negativos são normais
+        const normalQualitative = ['nr', 'não reagente', 'negativo', 'neg', 'não detectado', 'ausência'];
+        if (normalQualitative.some(v => value.toLowerCase().includes(v))) {
+            return false;
+        }
+        // Tenta extrair número
+        const numMatch = value.match(/[\d,\.]+/);
+        if (!numMatch) return false;
+        value = parseFloat(numMatch[0].replace(',', '.'));
+    } else if (typeof value === 'number') {
+        // OK
+    } else {
+        return false;
+    }
+
+    if (isNaN(value)) return false;
+
+    // Verifica se está fora dos limites
+    if (ref.min !== undefined && value < ref.min) return true;
+    if (ref.max !== undefined && value > ref.max) return true;
+
+    return false;
+}
+
 // ===== CLASSE PRINCIPAL DO PARSER =====
 class ExamParser {
     constructor() {
         this.results = {};
+        this.allResults = []; // Stores ALL results for table generation
         this.gasometriaVenosa = {};
         this.gasometriaArterial = {};
+        this.allGasometrias = []; // Stores ALL gasometrias for table
         this.leucograma = {};
         this.lcrData = {};
         this.examCount = 0;
@@ -253,8 +406,10 @@ class ExamParser {
      */
     parse(rawText) {
         this.results = {};
+        this.allResults = [];
         this.gasometriaVenosa = {};
         this.gasometriaArterial = {};
+        this.allGasometrias = [];
         this.leucograma = {};
         this.lcrData = {};
         this.examCount = 0;
@@ -353,10 +508,6 @@ class ExamParser {
         const prefix = type === 'venosa' ? 'GV' : 'GA';
         const storage = type === 'venosa' ? this.gasometriaVenosa : this.gasometriaArterial;
 
-        // Verifica se já temos dados mais recentes
-        if (storage._date && storage._date > date) return;
-        storage._date = date;
-
         // Padrões para extrair valores da gasometria
         const patterns = {
             pH: /\bpH\s+([\d,\.]+)/i,
@@ -367,12 +518,29 @@ class ExamParser {
             SO2: /\bSO2\s+([\d,\.]+)/i,
         };
 
+        const gasData = { type: prefix, date };
         for (const [key, pattern] of Object.entries(patterns)) {
             const match = block.match(pattern);
             if (match) {
-                storage[key] = this.normalizeNumber(match[1]);
+                const value = this.normalizeNumber(match[1]);
+                gasData[key] = value;
+
+                // Atualiza o mais recente para exibição
+                if (!storage._date || storage._date < date) {
+                    storage[key] = value;
+                }
                 this.examCount++;
             }
+        }
+
+        // Salva a data mais recente
+        if (!storage._date || storage._date < date) {
+            storage._date = date;
+        }
+
+        // Salva para a tabela (todas as gasometrias)
+        if (Object.keys(gasData).length > 2) { // tem dados além de type e date
+            this.allGasometrias.push(gasData);
         }
 
         // Extrai sódio, potássio e cloro da gasometria também
@@ -441,7 +609,7 @@ class ExamParser {
         if (block.match(/GLICOSE\s+-\s+LÍQUOR/i) || block.match(/GLICOSE\s+-\s+LIQUOR/i)) {
             const match = block.match(/GLICOSE\s+([\d,\.]+)\s*mg\/dL/i);
             if (match) {
-                this.storeResult('Glic', 'lcr', this.normalizeNumber(match[1]), date);
+                this.storeResult('Glico', 'lcr', this.normalizeNumber(match[1]), date);
             }
         }
 
@@ -550,84 +718,51 @@ class ExamParser {
             }
         }
 
-        // PCRs virais - processamos todos juntos como painel
-        const viralPCRs = [];
-
-        // HSV-1
-        if (blockUpper.includes('HERPES SIMPLEX I')) {
-            if (blockUpper.includes('NÃO DETECTADO') || blockUpper.includes('NAO DETECTADO')) {
-                // Só adiciona ao painel se detectado
-            } else if (blockUpper.includes('DETECTADO')) {
-                viralPCRs.push('HSV1+');
+        // Bandas Oligoclonais
+        if (blockUpper.includes('BANDAS OLIGOCLONAIS')) {
+            if (blockUpper.includes('PRESENTES') || blockUpper.includes('POSITIVO') || blockUpper.includes('DETECTAD')) {
+                this.storeResult('BOC', 'lcr', 'Presentes', date);
+            } else if (blockUpper.includes('AUSENTES') || blockUpper.includes('NEGATIVO') || blockUpper.includes('NÃO DETECTAD')) {
+                this.storeResult('BOC', 'lcr', 'Ausentes', date);
             }
         }
 
-        // HSV-2
-        if (blockUpper.includes('HERPES SIMPLEX II')) {
-            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
-                viralPCRs.push('HSV2+');
-            }
-        }
+        // PCRs virais - rastreia cada resultado individualmente
+        // Para saber se fizeram o painel e todos foram negativos
+        const viralTests = [
+            { pattern: 'HERPES SIMPLEX I', name: 'HSV1' },
+            { pattern: 'HERPES SIMPLEX II', name: 'HSV2' },
+            { pattern: 'VARICELA ZOSTER', name: 'VZV' },
+            { pattern: ['CITOMEGALOVÍRUS', 'CITOMEGALOVIRUS'], name: 'CMV' },
+            { pattern: 'EPSTEIN-BARR', name: 'EBV' },
+            { pattern: ['HERPESVÍRUS HUMANO 6', 'HERPESVIRUS HUMANO 6', 'HHV6'], name: 'HHV6' },
+            { pattern: ['HERPESVÍRUS HUMANO 7', 'HERPESVIRUS HUMANO 7', 'HHV7'], name: 'HHV7' },
+            { pattern: ['ENTEROVÍRUS', 'ENTEROVIRUS'], name: 'EV' },
+            { pattern: ['ADENOVÍRUS', 'ADENOVIRUS'], name: 'AdV' },
+            { pattern: ['ERITROVÍRUS B19', 'ERITROVIRUS B19', 'PARVOVÍRUS B19', 'PARVOVIRUS B19'], name: 'B19' },
+        ];
 
-        // VZV
-        if (blockUpper.includes('VARICELA ZOSTER')) {
-            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
-                viralPCRs.push('VZV+');
-            }
-        }
+        for (const test of viralTests) {
+            const patterns = Array.isArray(test.pattern) ? test.pattern : [test.pattern];
+            const found = patterns.some(p => blockUpper.includes(p));
 
-        // CMV
-        if (blockUpper.includes('CITOMEGALOVÍRUS') || blockUpper.includes('CITOMEGALOVIRUS')) {
-            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
-                viralPCRs.push('CMV+');
-            }
-        }
+            if (found) {
+                // Marca que fizemos este teste viral
+                if (!this.lcrData.viralTested) this.lcrData.viralTested = [];
+                if (!this.lcrData.viralTested.includes(test.name)) {
+                    this.lcrData.viralTested.push(test.name);
+                }
 
-        // EBV
-        if (blockUpper.includes('EPSTEIN-BARR')) {
-            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
-                viralPCRs.push('EBV+');
-            }
-        }
+                // Verifica se positivo
+                const isPositive = blockUpper.includes('DETECTADO') &&
+                    !blockUpper.includes('NÃO DETECTADO') &&
+                    !blockUpper.includes('NAO DETECTADO');
 
-        // HHV-6
-        if (blockUpper.includes('HERPESVÍRUS HUMANO 6') || blockUpper.includes('HERPESVIRUS HUMANO 6') || blockUpper.includes('HHV6')) {
-            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
-                viralPCRs.push('HHV6+');
+                if (isPositive) {
+                    if (!this.lcrData.viralPositive) this.lcrData.viralPositive = [];
+                    this.lcrData.viralPositive.push(test.name + '+');
+                }
             }
-        }
-
-        // HHV-7
-        if (blockUpper.includes('HERPESVÍRUS HUMANO 7') || blockUpper.includes('HERPESVIRUS HUMANO 7') || blockUpper.includes('HHV7')) {
-            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
-                viralPCRs.push('HHV7+');
-            }
-        }
-
-        // Enterovírus
-        if (blockUpper.includes('ENTEROVÍRUS') || blockUpper.includes('ENTEROVIRUS')) {
-            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
-                viralPCRs.push('EV+');
-            }
-        }
-
-        // Adenovírus
-        if (blockUpper.includes('ADENOVÍRUS') || blockUpper.includes('ADENOVIRUS')) {
-            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
-                viralPCRs.push('AdV+');
-            }
-        }
-
-        // Parvovírus B19
-        if (blockUpper.includes('ERITROVÍRUS B19') || blockUpper.includes('ERITROVIRUS B19') || blockUpper.includes('PARVOVÍRUS B19') || blockUpper.includes('PARVOVIRUS B19')) {
-            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
-                viralPCRs.push('B19+');
-            }
-        }
-
-        // Se tem resultados positivos no painel viral, armazena
-        if (viralPCRs.length > 0) {
-            this.storeResult('PainelViral', 'lcr', viralPCRs.join(', '), date);
         }
     }
 
@@ -799,6 +934,10 @@ class ExamParser {
     storeResult(abbrev, category, value, date) {
         const key = `${category}_${abbrev}`;
 
+        // Armazena para a tabela (todos os valores)
+        this.allResults.push({ abbrev, category, value, date });
+
+        // Armazena o mais recente para exibição principal
         if (!this.results[key] || this.results[key].date < date) {
             this.results[key] = { abbrev, category, value, date };
             this.examCount++;
@@ -825,6 +964,18 @@ class ExamParser {
         const geraisItems = this.getGeraisItems();
         if (geraisItems.length > 0) {
             output.push('- Gerais: ' + geraisItems.join(' | '));
+        }
+
+        // Gasometria
+        const gasometriaItems = this.getGasometriaItems();
+        if (gasometriaItems.length > 0) {
+            output.push('- Gasometria: ' + gasometriaItems.join(' | '));
+        }
+
+        // Renal (função renal + eletrólitos)
+        const renalItems = this.getRenalItems();
+        if (renalItems.length > 0) {
+            output.push('- Renal: ' + renalItems.join(' | '));
         }
 
         // Metabólico
@@ -881,14 +1032,9 @@ class ExamParser {
     }
 
     /**
-     * Obtém itens da categoria LCR (em ordem clínica)
+     * Obtém itens da categoria LCR (em ordem clínica com formatação especial)
      */
     getLCRItems() {
-        // Ordem clínica: aspecto, celularidade, bioquímica, microbiologia, molecular
-        const order = ['Asp', 'Cel', 'Hem', 'Dif', 'PT', 'Glic', 'Lac', 'ADA',
-            'Gram', 'Cult', 'pBAAR', 'CultMTB', 'GeneXpert',
-            'CitoOnco', 'PainelViral'];
-
         const items = [];
         const lcrResults = {};
 
@@ -899,39 +1045,130 @@ class ExamParser {
             }
         }
 
-        // Adiciona na ordem definida
-        for (const abbrev of order) {
-            if (lcrResults[abbrev]) {
-                items.push(`${abbrev} ${lcrResults[abbrev]}`);
-                delete lcrResults[abbrev];
+        // Aspecto (só mostra se não for normal)
+        if (lcrResults['Asp']) {
+            items.push(`Asp ${lcrResults['Asp']}`);
+        }
+
+        // Celularidade com diferencial entre parênteses
+        if (lcrResults['Cel']) {
+            let celStr = `Cel ${lcrResults['Cel']}`;
+            if (lcrResults['Dif']) {
+                // Formata diferencial: "Ly 88% Mo 12%" -> "(Linf 88%, Mono 12%)"
+                let dif = lcrResults['Dif'];
+                dif = dif.replace(/Ly\s*/g, 'Linf ').replace(/Mo\s*/g, 'Mono ').replace(/N\s*/g, 'Neutro ');
+                dif = dif.replace(/\s+/g, ' ').trim();
+                // Adiciona vírgulas entre os componentes
+                dif = dif.replace(/(\d+%)\s+/g, '$1, ');
+                celStr += ` (${dif})`;
+            }
+            items.push(celStr);
+        }
+
+        // Hemácias (só mostra se > 0)
+        if (lcrResults['Hem'] && lcrResults['Hem'] !== '0') {
+            items.push(`Hem ${lcrResults['Hem']}`);
+        }
+
+        // Proteínas
+        if (lcrResults['PT']) {
+            items.push(`Pt ${lcrResults['PT']}`);
+        }
+
+        // Glicose
+        if (lcrResults['Glico']) {
+            items.push(`Glico ${lcrResults['Glico']}`);
+        }
+
+        // Lactato
+        if (lcrResults['Lac']) {
+            items.push(`Lac ${lcrResults['Lac']}`);
+        }
+
+        // ADA
+        if (lcrResults['ADA']) {
+            items.push(`ADA ${lcrResults['ADA']}`);
+        }
+
+        // Gram
+        if (lcrResults['Gram']) {
+            items.push(`Gram ${lcrResults['Gram']}`);
+        }
+
+        // GeneXpert
+        if (lcrResults['GeneXpert']) {
+            items.push(`GeneXpert ${lcrResults['GeneXpert']}`);
+        }
+
+        // BAAR
+        if (lcrResults['pBAAR']) {
+            items.push(`pBAAR ${lcrResults['pBAAR']}`);
+        }
+
+        // Culturas - separar micobactérias das outras (demora mais)
+        if (lcrResults['Cult']) {
+            if (lcrResults['Cult'] === 'Neg') {
+                items.push('Cultura negativa');
+            } else if (lcrResults['Cult'] === 'Parcial Neg') {
+                items.push('Cultura parcial negativa');
+            } else {
+                items.push(`Cultura: ${lcrResults['Cult']}`);
             }
         }
 
-        // Adiciona qualquer item restante não ordenado
-        for (const [abbrev, value] of Object.entries(lcrResults)) {
-            items.push(`${abbrev} ${value}`);
+        // Cultura para micobactérias (separada)
+        if (lcrResults['CultMTB']) {
+            if (lcrResults['CultMTB'] === 'Neg') {
+                items.push('Cultura micobactéria negativa');
+            } else if (lcrResults['CultMTB'] === 'Parcial Neg') {
+                items.push('Cultura micobactéria parcial negativa');
+            } else {
+                items.push(`Cultura micobactéria: ${lcrResults['CultMTB']}`);
+            }
+        }
+
+        // Painel viral - baseado no tracking de lcrData
+        if (this.lcrData.viralTested && this.lcrData.viralTested.length > 0) {
+            if (this.lcrData.viralPositive && this.lcrData.viralPositive.length > 0) {
+                items.push(`Painel viral: ${this.lcrData.viralPositive.join(', ')}`);
+            } else {
+                items.push('Painel viral negativo');
+            }
+        }
+
+        // Citologia oncótica
+        if (lcrResults['CitoOnco']) {
+            items.push(`CitoOnco ${lcrResults['CitoOnco']}`);
+        }
+
+        // Bandas oligoclonais
+        if (lcrResults['BOC']) {
+            items.push(`BOC ${lcrResults['BOC']}`);
         }
 
         return items;
     }
 
     /**
-     * Obtém itens da categoria Gerais (formato especial)
+     * Obtém itens da categoria Gerais (hemograma + gasometria + hepáticos + coagulação)
      */
     getGeraisItems() {
         const items = [];
 
-        // Hemoglobina
+        // Hemoglobina com VCM entre parênteses
         const hb = this.findResult('gerais', 'Hb');
-        if (hb) items.push(`Hb ${hb}`);
+        const vcm = this.findResult('gerais', 'VCM');
+        if (hb) {
+            let hbStr = `Hb ${hb}`;
+            if (vcm) {
+                hbStr += ` (VCM ${vcm})`;
+            }
+            items.push(hbStr);
+        }
 
         // Hematócrito
         const ht = this.findResult('gerais', 'Ht');
         if (ht) items.push(`Ht ${ht}`);
-
-        // VCM
-        const vcm = this.findResult('gerais', 'VCM');
-        if (vcm) items.push(`VCM ${vcm}`);
 
         // Leucócitos com diferencial
         const leuco = this.findResult('gerais', 'Leuco');
@@ -951,56 +1188,6 @@ class ExamParser {
         // Plaquetas
         const plaq = this.findResult('gerais', 'Plaq');
         if (plaq) items.push(`Plaq ${plaq}`);
-
-        // Creatinina
-        const cr = this.findResult('gerais', 'Cr');
-        if (cr) items.push(`Cr ${cr}`);
-
-        // Uréia
-        const ur = this.findResult('gerais', 'Ur');
-        if (ur) items.push(`Ur ${ur}`);
-
-        // Sódio
-        const na = this.findResult('gerais', 'Na');
-        if (na) items.push(`Na ${na}`);
-
-        // Potássio
-        const k = this.findResult('gerais', 'K');
-        if (k) items.push(`K ${k}`);
-
-        // Cloro
-        const cl = this.findResult('gerais', 'Cl');
-        if (cl) items.push(`Cl ${cl}`);
-
-        // Cálcio
-        const ca = this.findResult('gerais', 'Ca') || this.findResult('gerais', 'CaI');
-        if (ca) items.push(`Ca ${ca}`);
-
-        // Fósforo
-        const p = this.findResult('gerais', 'P');
-        if (p) items.push(`P ${p}`);
-
-        // Magnésio
-        const mg = this.findResult('gerais', 'Mg');
-        if (mg) items.push(`Mg ${mg}`);
-
-        // Gasometria Venosa
-        if (Object.keys(this.gasometriaVenosa).length > 1) {
-            if (this.gasometriaVenosa.pH) items.push(`GV.pH ${this.gasometriaVenosa.pH}`);
-            if (this.gasometriaVenosa.pCO2) items.push(`GV.pCO2 ${this.gasometriaVenosa.pCO2}`);
-            if (this.gasometriaVenosa.BIC) items.push(`GV.BIC ${this.gasometriaVenosa.BIC}`);
-            if (this.gasometriaVenosa.LAC) items.push(`GV.LAC ${this.gasometriaVenosa.LAC}`);
-        }
-
-        // Gasometria Arterial
-        if (Object.keys(this.gasometriaArterial).length > 1) {
-            if (this.gasometriaArterial.pH) items.push(`GA.pH ${this.gasometriaArterial.pH}`);
-            if (this.gasometriaArterial.pO2) items.push(`GA.pO2 ${this.gasometriaArterial.pO2}`);
-            if (this.gasometriaArterial.pCO2) items.push(`GA.pCO2 ${this.gasometriaArterial.pCO2}`);
-            if (this.gasometriaArterial.BIC) items.push(`GA.BIC ${this.gasometriaArterial.BIC}`);
-            if (this.gasometriaArterial.LAC) items.push(`GA.LAC ${this.gasometriaArterial.LAC}`);
-            if (this.gasometriaArterial.SO2) items.push(`GA.SO2 ${this.gasometriaArterial.SO2}`);
-        }
 
         // Hepáticos
         const tgo = this.findResult('gerais', 'TGO');
@@ -1039,6 +1226,74 @@ class ExamParser {
 
         const lip = this.findResult('gerais', 'LIP');
         if (lip) items.push(`LIP ${lip}`);
+
+        return items;
+    }
+
+    /**
+     * Obtém itens da categoria Gasometria (venosa e arterial)
+     */
+    getGasometriaItems() {
+        const items = [];
+
+        // Gasometria Venosa
+        if (Object.keys(this.gasometriaVenosa).length > 1) {
+            if (this.gasometriaVenosa.pH) items.push(`GV.pH ${this.gasometriaVenosa.pH}`);
+            if (this.gasometriaVenosa.pCO2) items.push(`GV.pCO2 ${this.gasometriaVenosa.pCO2}`);
+            if (this.gasometriaVenosa.BIC) items.push(`GV.BIC ${this.gasometriaVenosa.BIC}`);
+            if (this.gasometriaVenosa.LAC) items.push(`GV.LAC ${this.gasometriaVenosa.LAC}`);
+        }
+
+        // Gasometria Arterial
+        if (Object.keys(this.gasometriaArterial).length > 1) {
+            if (this.gasometriaArterial.pH) items.push(`GA.pH ${this.gasometriaArterial.pH}`);
+            if (this.gasometriaArterial.pO2) items.push(`GA.pO2 ${this.gasometriaArterial.pO2}`);
+            if (this.gasometriaArterial.pCO2) items.push(`GA.pCO2 ${this.gasometriaArterial.pCO2}`);
+            if (this.gasometriaArterial.BIC) items.push(`GA.BIC ${this.gasometriaArterial.BIC}`);
+            if (this.gasometriaArterial.LAC) items.push(`GA.LAC ${this.gasometriaArterial.LAC}`);
+            if (this.gasometriaArterial.SO2) items.push(`GA.SO2 ${this.gasometriaArterial.SO2}`);
+        }
+
+        return items;
+    }
+
+    /**
+     * Obtém itens da categoria Renal (função renal + eletrólitos)
+     */
+    getRenalItems() {
+        const items = [];
+
+        // Creatinina
+        const cr = this.findResult('gerais', 'Cr');
+        if (cr) items.push(`Cr ${cr}`);
+
+        // Uréia
+        const ur = this.findResult('gerais', 'Ur');
+        if (ur) items.push(`Ur ${ur}`);
+
+        // Sódio
+        const na = this.findResult('gerais', 'Na');
+        if (na) items.push(`Na ${na}`);
+
+        // Potássio
+        const k = this.findResult('gerais', 'K');
+        if (k) items.push(`K ${k}`);
+
+        // Cloro
+        const cl = this.findResult('gerais', 'Cl');
+        if (cl) items.push(`Cl ${cl}`);
+
+        // Cálcio
+        const ca = this.findResult('gerais', 'Ca') || this.findResult('gerais', 'CaI');
+        if (ca) items.push(`Ca ${ca}`);
+
+        // Fósforo
+        const p = this.findResult('gerais', 'P');
+        if (p) items.push(`P ${p}`);
+
+        // Magnésio
+        const mg = this.findResult('gerais', 'Mg');
+        if (mg) items.push(`Mg ${mg}`);
 
         return items;
     }
@@ -1101,18 +1356,19 @@ class ExamParser {
     /**
      * Retorna dados estruturados para a tabela
      * Agrupa por data (apenas dia, ignora horário)
+     * Usa allResults para ter TODOS os valores de todos os dias
      */
     getTableData() {
-        const tableData = {}; // { 'dd/mm/yyyy': { 'ExamName': value } }
+        const tableData = {}; // { 'dd/mm': { 'ExamName': value } }
         const allExams = new Set();
 
-        // Processa resultados normais
-        for (const [key, data] of Object.entries(this.results)) {
+        // Processa TODOS os resultados (não apenas o mais recente)
+        for (const data of this.allResults) {
             if (data.date) {
                 const dateKey = this.formatDateKey(data.date);
                 if (!tableData[dateKey]) tableData[dateKey] = {};
 
-                // Se já existe um valor para este exame nesta data, mantém o mais recente
+                // Se já existe um valor para este exame nesta data, mantém o mais recente do dia
                 if (!tableData[dateKey][data.abbrev] || data.date > tableData[dateKey][data.abbrev].date) {
                     tableData[dateKey][data.abbrev] = { value: data.value, date: data.date };
                 }
@@ -1120,30 +1376,20 @@ class ExamParser {
             }
         }
 
-        // Processa gasometria venosa
-        if (this.gasometriaVenosa.date) {
-            const dateKey = this.formatDateKey(this.gasometriaVenosa.date);
-            if (!tableData[dateKey]) tableData[dateKey] = {};
+        // Processa TODAS as gasometrias
+        for (const gasData of this.allGasometrias) {
+            if (gasData.date) {
+                const dateKey = this.formatDateKey(gasData.date);
+                if (!tableData[dateKey]) tableData[dateKey] = {};
 
-            for (const [param, value] of Object.entries(this.gasometriaVenosa)) {
-                if (param !== 'date' && param !== 'type' && value) {
-                    const examName = `GV.${param}`;
-                    tableData[dateKey][examName] = { value, date: this.gasometriaVenosa.date };
-                    allExams.add(examName);
-                }
-            }
-        }
-
-        // Processa gasometria arterial
-        if (this.gasometriaArterial.date) {
-            const dateKey = this.formatDateKey(this.gasometriaArterial.date);
-            if (!tableData[dateKey]) tableData[dateKey] = {};
-
-            for (const [param, value] of Object.entries(this.gasometriaArterial)) {
-                if (param !== 'date' && param !== 'type' && value) {
-                    const examName = `GA.${param}`;
-                    tableData[dateKey][examName] = { value, date: this.gasometriaArterial.date };
-                    allExams.add(examName);
+                for (const [param, value] of Object.entries(gasData)) {
+                    if (param !== 'date' && param !== 'type' && value) {
+                        const examName = `${gasData.type}.${param}`;
+                        if (!tableData[dateKey][examName] || gasData.date > tableData[dateKey][examName].date) {
+                            tableData[dateKey][examName] = { value, date: gasData.date };
+                        }
+                        allExams.add(examName);
+                    }
                 }
             }
         }
@@ -1157,6 +1403,7 @@ class ExamParser {
             }
         }
 
+
         return {
             dates: Object.keys(simplifiedData),
             exams: Array.from(allExams),
@@ -1167,7 +1414,8 @@ class ExamParser {
     formatDateKey(date) {
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
-        return `${day}/${month}`;
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
     }
 }
 
@@ -1193,6 +1441,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const parser = new ExamParser();
     let isAscending = true; // true = antigo -> recente
     let currentTableData = null;
+    let isHighlightActive = false;
+    const highlightBtn = document.getElementById('highlightBtn');
 
     // Processar exames
     processBtn.addEventListener('click', () => {
@@ -1268,78 +1518,139 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Ordena as datas
+        // Ordena as datas considerando o ano completo
         const sortedDates = [...dates].sort((a, b) => {
-            const [dayA, monthA] = a.split('/').map(Number);
-            const [dayB, monthB] = b.split('/').map(Number);
-            const dateA = new Date(2025, monthA - 1, dayA);
-            const dateB = new Date(2025, monthB - 1, dayB);
+            const partsA = a.split('/').map(Number);
+            const partsB = b.split('/').map(Number);
+            // Formato: dd/mm/yyyy
+            const dateA = new Date(partsA[2] || 2025, partsA[1] - 1, partsA[0]);
+            const dateB = new Date(partsB[2] || 2025, partsB[1] - 1, partsB[0]);
             return ascending ? dateA - dateB : dateB - dateA;
         });
 
-        // Ordena exames pela ordem definida nas categorias
-        const examOrder = getExamOrder();
-        const sortedExams = [...exams].sort((a, b) => {
-            const indexA = examOrder.indexOf(a);
-            const indexB = examOrder.indexOf(b);
-            if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-            if (indexA === -1) return 1;
-            if (indexB === -1) return -1;
-            return indexA - indexB;
-        });
+        // Define categorias com seus exames
+        const categories = getExamCategories();
 
         // Gera HTML da tabela
         let html = '<table class="exam-table"><thead><tr>';
         html += '<th>Exame</th>';
 
+        // Formata cabeçalhos das datas (dd/mm somente para exibição)
         for (const date of sortedDates) {
-            html += `<th>${date}</th>`;
+            const parts = date.split('/');
+            const displayDate = `${parts[0]}/${parts[1]}`;
+            html += `<th>${displayDate}</th>`;
         }
         html += '</tr></thead><tbody>';
 
-        for (const exam of sortedExams) {
-            html += '<tr>';
-            html += `<td>${exam}</td>`;
+        // Itera por categoria
+        for (const category of categories) {
+            // Verifica se há exames desta categoria nos dados
+            const categoryExams = category.exams.filter(exam => exams.includes(exam));
 
-            for (const date of sortedDates) {
-                const value = data[date]?.[exam] || '';
-                html += `<td>${value}</td>`;
+            if (categoryExams.length > 0) {
+                // Adiciona linha de cabeçalho da categoria
+                html += `<tr class="category-header"><td colspan="${sortedDates.length + 1}">${category.name}</td></tr>`;
+
+                // Adiciona exames da categoria
+                for (const exam of categoryExams) {
+                    html += '<tr>';
+                    html += `<td>${exam}</td>`;
+
+                    for (const date of sortedDates) {
+                        const value = data[date]?.[exam] || '';
+                        // Adiciona atributos de dados para permitir highlight dinâmico
+                        const abnormalClass = isHighlightActive && value && isAbnormal(exam, value) ? ' class="abnormal"' : '';
+                        html += `<td data-exam="${exam}" data-value="${value}"${abnormalClass}>${value}</td>`;
+                    }
+                    html += '</tr>';
+                }
             }
-            html += '</tr>';
+        }
+
+        // Adiciona exames que não estão em nenhuma categoria conhecida
+        const allCategoryExams = categories.flatMap(c => c.exams);
+        const uncategorizedExams = exams.filter(e => !allCategoryExams.includes(e));
+
+        if (uncategorizedExams.length > 0) {
+            html += `<tr class="category-header"><td colspan="${sortedDates.length + 1}">Outros</td></tr>`;
+            for (const exam of uncategorizedExams) {
+                html += '<tr>';
+                html += `<td>${exam}</td>`;
+                for (const date of sortedDates) {
+                    const value = data[date]?.[exam] || '';
+                    const abnormalClass = isHighlightActive && value && isAbnormal(exam, value) ? ' class="abnormal"' : '';
+                    html += `<td data-exam="${exam}" data-value="${value}"${abnormalClass}>${value}</td>`;
+                }
+                html += '</tr>';
+            }
         }
 
         html += '</tbody></table>';
         tableContainer.innerHTML = html;
     }
 
-    // Ordem dos exames para ordenação
-    function getExamOrder() {
+    // Categorias de exames com ordem definida
+    function getExamCategories() {
         return [
-            // Gerais - Hemograma
-            'Hb', 'Ht', 'VCM', 'Leuco', 'Plaq',
-            // Gerais - Bioquímica
-            'Cr', 'Ur', 'Na', 'K', 'Cl', 'Ca', 'CaI', 'P', 'Mg',
-            // Gasometria Venosa
-            'GV.pH', 'GV.pCO2', 'GV.BIC', 'GV.LAC',
-            // Gasometria Arterial
-            'GA.pH', 'GA.pO2', 'GA.pCO2', 'GA.BIC', 'GA.AG', 'GA.LAC', 'GA.SO2',
-            // Hepáticos
-            'TGO', 'TGP', 'BT', 'BD', 'PT', 'ALB', 'FA', 'GGT', 'AMIL', 'LIP',
-            // Coagulação
-            'INR', 'R',
-            // Metabólico
-            'Glic', 'HbGlic', 'HDL', 'LDL', 'VLDL', 'ColT', 'Trig', 'TSH', 'T4L', 'B12', 'AF', 'VitD', 'PTH', 'CPK', 'Fe', 'Ferritina', 'CTLF', 'STf', 'DHL',
-            // Reumato
-            'PCR', 'VHS', 'FR', 'FAN', 'Anti-Ro', 'Anti-La', 'Anti-MPO', 'Anti-PR3', 'anti-dsDNA', 'anti-Sm', 'C3', 'C4', 'IFS', 'EFPS', 'Igk', 'Igl', 'RKL',
-            // Trombofilias
-            'Anticoagulante lúpico', 'Anticardiolipina IgG', 'Anticardiolipina IgM', 'Anti-beta-2-glicoproteína', 'Proteína C', 'Proteína S', 'Antitrombina III', 'DD', 'Fibrinogênio',
-            // Sorologias
-            'HepB.Anti-HBc', 'HepB.Anti-HBs', 'HepB.Ag-HBs', 'HepB.Ag-HBe', 'HepC', 'Anti-HIV', 'VDRL', 'CMV.IgG', 'CMV.IgM', 'VZV.IgG', 'VZV.IgM', 'HSV.IgG', 'HSV.IgM', 'HTLV.IgG', 'HTLV.IgM', 'TOXO.IgG', 'TOXO.IgM',
-            // Níveis séricos
-            'VPA', 'PHT', 'LEV', 'CBZ', 'PB', 'LTG',
-            // Cardio
-            'Tropo-T', 'NT-proBNP'
+            {
+                name: 'GERAIS',
+                exams: ['Hb', 'Ht', 'VCM', 'Leuco', 'Plaq']
+            },
+            {
+                name: 'RENAL',
+                exams: ['Cr', 'Ur', 'Na', 'K', 'Cl', 'Ca', 'CaI', 'P', 'Mg']
+            },
+            {
+                name: 'GASOMETRIA VENOSA',
+                exams: ['GV.pH', 'GV.pCO2', 'GV.pO2', 'GV.BIC', 'GV.LAC', 'GV.SO2']
+            },
+            {
+                name: 'GASOMETRIA ARTERIAL',
+                exams: ['GA.pH', 'GA.pO2', 'GA.pCO2', 'GA.BIC', 'GA.AG', 'GA.LAC', 'GA.SO2']
+            },
+            {
+                name: 'HEPÁTICOS',
+                exams: ['TGO', 'TGP', 'BT', 'BD', 'PT', 'ALB', 'FA', 'GGT', 'AMIL', 'LIP']
+            },
+            {
+                name: 'COAGULAÇÃO',
+                exams: ['INR', 'R', 'DD', 'Fibrinogênio']
+            },
+            {
+                name: 'METABÓLICO',
+                exams: ['Glic', 'HbGlic', 'HDL', 'LDL', 'VLDL', 'ColT', 'Trig', 'TSH', 'T4L', 'B12', 'AF', 'VitD', 'PTH', 'CPK', 'Fe', 'Ferritina', 'CTLF', 'STf', 'DHL']
+            },
+            {
+                name: 'REUMATO/INFLAMATÓRIO',
+                exams: ['PCR', 'VHS', 'FR', 'FAN', 'Anti-Ro', 'Anti-La', 'Anti-MPO', 'Anti-PR3', 'anti-dsDNA', 'anti-Sm', 'C3', 'C4', 'IFS', 'EFPS', 'Igk', 'Igl', 'RKL']
+            },
+            {
+                name: 'TROMBOFILIAS',
+                exams: ['Anticoagulante lúpico', 'Anticardiolipina IgG', 'Anticardiolipina IgM', 'Anti-beta-2-glicoproteína', 'Proteína C', 'Proteína S', 'Antitrombina III']
+            },
+            {
+                name: 'SOROLOGIAS',
+                exams: ['HepB.Anti-HBc', 'HepB.Anti-HBs', 'HepB.Ag-HBs', 'HepB.Ag-HBe', 'HepC', 'Anti-HIV', 'VDRL', 'CMV.IgG', 'CMV.IgM', 'VZV.IgG', 'VZV.IgM', 'HSV.IgG', 'HSV.IgM', 'HTLV.IgG', 'HTLV.IgM', 'TOXO.IgG', 'TOXO.IgM']
+            },
+            {
+                name: 'NÍVEIS SÉRICOS',
+                exams: ['VPA', 'PHT', 'LEV', 'CBZ', 'PB', 'LTG']
+            },
+            {
+                name: 'CARDIO',
+                exams: ['Tropo-T', 'NT-proBNP']
+            },
+            {
+                name: 'LCR',
+                exams: ['Cel', 'Hem', 'Dif', 'PT', 'Glico', 'Lac', 'ADA', 'Asp', 'Gram', 'Cult', 'CultMTB', 'pBAAR', 'GeneXpert', 'CitoOnco', 'BOC']
+            }
         ];
+    }
+
+    // Ordem dos exames para ordenação (mantém para compatibilidade)
+    function getExamOrder() {
+        return getExamCategories().flatMap(c => c.exams);
     }
 
     // Limpar
@@ -1400,6 +1711,41 @@ document.addEventListener('DOMContentLoaded', () => {
             fallbackCopy(text);
         }
     });
+
+    // Marcar exames alterados
+    highlightBtn.addEventListener('click', () => {
+        isHighlightActive = !isHighlightActive;
+        highlightBtn.classList.toggle('highlight-active', isHighlightActive);
+        highlightBtn.textContent = isHighlightActive ? 'Remover Marcação' : 'Marcar Alterados';
+
+        // Re-renderiza a tabela se existir
+        if (currentTableData) {
+            renderTable(currentTableData, isAscending);
+        }
+
+        // Aplica highlight no resultado textual
+        applyTextHighlighting();
+    });
+
+    // Aplica destaque nos resultados textuais
+    function applyTextHighlighting() {
+        const lines = resultContent.innerHTML.split('\n');
+        const processedLines = lines.map(line => {
+            if (!isHighlightActive) {
+                // Remove spans de highlight
+                return line.replace(/<span class="abnormal">([^<]+)<\/span>/g, '$1');
+            }
+
+            // Procura por padrões como "Na 145" ou "Cr 1.8"
+            return line.replace(/\b([A-Za-z]+(?:\.[A-Za-z]+)?)\s+([\d,\.]+(?:\s*[a-z%\/]+)?)/gi, (match, exam, value) => {
+                if (isAbnormal(exam.trim(), value.trim())) {
+                    return `<span class="abnormal">${exam} ${value}</span>`;
+                }
+                return match;
+            });
+        });
+        resultContent.innerHTML = processedLines.join('\n');
+    }
 
     // Fallback para copiar
     function fallbackCopy(text) {
