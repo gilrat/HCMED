@@ -427,9 +427,229 @@ class ExamParser {
      * Parseia exames de LCR
      */
     parseLCR(block, date) {
-        // TODO: Implementar parsing específico para LCR
-        // Por enquanto, usa o parser genérico
-        this.parseGenericExam(block, date);
+        const blockUpper = block.toUpperCase();
+
+        // Proteínas Totais
+        if (blockUpper.includes('PROTEÍNAS TOTAIS') || blockUpper.includes('PROTEINAS TOTAIS')) {
+            const match = block.match(/PROTEÍNAS?\s+TOTAIS?\s+(\d+)\s*mg\/dL/i);
+            if (match) {
+                this.storeResult('PT', 'lcr', match[1], date);
+            }
+        }
+
+        // Glicose
+        if (block.match(/GLICOSE\s+-\s+LÍQUOR/i) || block.match(/GLICOSE\s+-\s+LIQUOR/i)) {
+            const match = block.match(/GLICOSE\s+([\d,\.]+)\s*mg\/dL/i);
+            if (match) {
+                this.storeResult('Glic', 'lcr', this.normalizeNumber(match[1]), date);
+            }
+        }
+
+        // Lactato
+        if (block.match(/LACTATO\s+-\s+LÍQUOR/i) || block.match(/LACTATO\s+-\s+LIQUOR/i)) {
+            const match = block.match(/LACTATO\s+([\d,\.]+)\s*mmol\/L/i);
+            if (match) {
+                this.storeResult('Lac', 'lcr', this.normalizeNumber(match[1]), date);
+            }
+        }
+
+        // ADA (Adenosina Deaminase)
+        if (blockUpper.includes('ADENOSINA DEAMINASE')) {
+            const match = block.match(/ADENOSINA DEAMINASE\s+(<?\s*[\d,\.]+)\s*U\/L/i);
+            if (match) {
+                this.storeResult('ADA', 'lcr', match[1].replace(/\s/g, ''), date);
+            }
+        }
+
+        // Contagem Global (Celularidade)
+        if (blockUpper.includes('CONTAGEM GLOBAL')) {
+            const cellMatch = block.match(/Celulas?\s*:\s+(\d+)\s*\/mm³/i);
+            const hemaciasMatch = block.match(/Hemacias?\s*:\s+(\d+)\s*\/mm³/i);
+            if (cellMatch) {
+                this.storeResult('Cel', 'lcr', cellMatch[1], date);
+            }
+            if (hemaciasMatch && parseInt(hemaciasMatch[1]) > 0) {
+                this.storeResult('Hem', 'lcr', hemaciasMatch[1], date);
+            }
+        }
+
+        // Contagem Específica (Diferencial)
+        if (blockUpper.includes('CONTAGEM ESPECÍFICA') || blockUpper.includes('CONTAGEM ESPECIFICA')) {
+            const linfoMatch = block.match(/Linfocitos?\s*:\s+(\d+)\s*%/i);
+            const monoMatch = block.match(/Monócitos?\s*:\s+(\d+)\s*%/i) || block.match(/Monocitos?\s*:\s+(\d+)\s*%/i);
+            const neutroMatch = block.match(/Neutrófilos?\s*:\s+(\d+)\s*%/i) || block.match(/Neutrofilos?\s*:\s+(\d+)\s*%/i);
+
+            const diffParts = [];
+            if (linfoMatch) diffParts.push(`Ly ${linfoMatch[1]}%`);
+            if (monoMatch) diffParts.push(`Mo ${monoMatch[1]}%`);
+            if (neutroMatch) diffParts.push(`N ${neutroMatch[1]}%`);
+
+            if (diffParts.length > 0) {
+                this.storeResult('Dif', 'lcr', diffParts.join(' '), date);
+            }
+        }
+
+        // Caracteres Físicos
+        if (blockUpper.includes('CARACTERES FÍSICOS') || blockUpper.includes('CARACTERES FISICOS')) {
+            const aspectMatch = block.match(/Aspecto e cor\s*:\s+([^\t\n]+)/i);
+            if (aspectMatch) {
+                const aspecto = aspectMatch[1].trim();
+                if (!aspecto.toLowerCase().includes('límpido e incolor')) {
+                    this.storeResult('Asp', 'lcr', aspecto, date);
+                }
+            }
+        }
+
+        // Exame Bacterioscópico
+        if (blockUpper.includes('EXAME BACTERIOSCÓPICO') || blockUpper.includes('EXAME BACTERIOSCOPICO')) {
+            const result = this.extractQualitativeResult(block, ['MICRORGANISMOS']);
+            if (result) {
+                this.storeResult('Gram', 'lcr', result, date);
+            }
+        }
+
+        // Cultura Aeróbia
+        if (block.match(/CULTURA AERÓBIA\s+-\s+LÍQUOR/i) || block.match(/CULTURA AEROBIA\s+-\s+LIQUOR/i)) {
+            const result = this.extractQualitativeResult(block, ['NEGATIVA', 'PARCIAL NEGATIVA']);
+            if (result) {
+                this.storeResult('Cult', 'lcr', result, date);
+            }
+        }
+
+        // Cultura para Micobactérias
+        if (blockUpper.includes('CULTURA PARA MICOBACTÉRIAS') || blockUpper.includes('CULTURA PARA MICOBACTERIAS')) {
+            const result = this.extractQualitativeResult(block, ['NEGATIVA', 'PARCIAL NEGATIVA']);
+            if (result) {
+                this.storeResult('CultMTB', 'lcr', result, date);
+            }
+        }
+
+        // Pesquisa de BAAR
+        if (blockUpper.includes('PESQUISA DE BACILO ÁLCOOL') || blockUpper.includes('PESQUISA DE BACILO ALCOOL') || blockUpper.includes('BAAR')) {
+            const result = this.extractQualitativeResult(block, ['NEGATIVA', 'POSITIVA']);
+            if (result) {
+                this.storeResult('pBAAR', 'lcr', result, date);
+            }
+        }
+
+        // Teste Rápido Molecular TB (GeneXpert)
+        if (blockUpper.includes('TESTE RÁPIDO MOLECULAR PARA TUBERCULOSE') || blockUpper.includes('GENEXPERT')) {
+            if (blockUpper.includes('NÃO DETECTADO') || blockUpper.includes('NAO DETECTADO')) {
+                this.storeResult('GeneXpert', 'lcr', 'Neg', date);
+            } else if (blockUpper.includes('DETECTADO')) {
+                this.storeResult('GeneXpert', 'lcr', 'Pos', date);
+            }
+        }
+
+        // Citologia Oncótica
+        if (blockUpper.includes('CITOLOGIA ONCÓTICA') || blockUpper.includes('CITOLOGIA ONCOTICA')) {
+            if (blockUpper.includes('NEGATIVA') || blockUpper.includes('AUSENCIA DE CÉLULAS NEOPLASICAS') || blockUpper.includes('AUSENCIA DE CELULAS NEOPLASICAS')) {
+                this.storeResult('CitoOnco', 'lcr', 'Neg', date);
+            } else if (blockUpper.includes('POSITIVA') || blockUpper.includes('CÉLULAS NEOPLÁSICAS')) {
+                this.storeResult('CitoOnco', 'lcr', 'Pos', date);
+            }
+        }
+
+        // PCRs virais - processamos todos juntos como painel
+        const viralPCRs = [];
+
+        // HSV-1
+        if (blockUpper.includes('HERPES SIMPLEX I')) {
+            if (blockUpper.includes('NÃO DETECTADO') || blockUpper.includes('NAO DETECTADO')) {
+                // Só adiciona ao painel se detectado
+            } else if (blockUpper.includes('DETECTADO')) {
+                viralPCRs.push('HSV1+');
+            }
+        }
+
+        // HSV-2
+        if (blockUpper.includes('HERPES SIMPLEX II')) {
+            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
+                viralPCRs.push('HSV2+');
+            }
+        }
+
+        // VZV
+        if (blockUpper.includes('VARICELA ZOSTER')) {
+            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
+                viralPCRs.push('VZV+');
+            }
+        }
+
+        // CMV
+        if (blockUpper.includes('CITOMEGALOVÍRUS') || blockUpper.includes('CITOMEGALOVIRUS')) {
+            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
+                viralPCRs.push('CMV+');
+            }
+        }
+
+        // EBV
+        if (blockUpper.includes('EPSTEIN-BARR')) {
+            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
+                viralPCRs.push('EBV+');
+            }
+        }
+
+        // HHV-6
+        if (blockUpper.includes('HERPESVÍRUS HUMANO 6') || blockUpper.includes('HERPESVIRUS HUMANO 6') || blockUpper.includes('HHV6')) {
+            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
+                viralPCRs.push('HHV6+');
+            }
+        }
+
+        // HHV-7
+        if (blockUpper.includes('HERPESVÍRUS HUMANO 7') || blockUpper.includes('HERPESVIRUS HUMANO 7') || blockUpper.includes('HHV7')) {
+            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
+                viralPCRs.push('HHV7+');
+            }
+        }
+
+        // Enterovírus
+        if (blockUpper.includes('ENTEROVÍRUS') || blockUpper.includes('ENTEROVIRUS')) {
+            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
+                viralPCRs.push('EV+');
+            }
+        }
+
+        // Adenovírus
+        if (blockUpper.includes('ADENOVÍRUS') || blockUpper.includes('ADENOVIRUS')) {
+            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
+                viralPCRs.push('AdV+');
+            }
+        }
+
+        // Parvovírus B19
+        if (blockUpper.includes('ERITROVÍRUS B19') || blockUpper.includes('ERITROVIRUS B19') || blockUpper.includes('PARVOVÍRUS B19') || blockUpper.includes('PARVOVIRUS B19')) {
+            if (block.includes('Detectado') && !block.includes('Não Detectado')) {
+                viralPCRs.push('B19+');
+            }
+        }
+
+        // Se tem resultados positivos no painel viral, armazena
+        if (viralPCRs.length > 0) {
+            this.storeResult('PainelViral', 'lcr', viralPCRs.join(', '), date);
+        }
+    }
+
+    /**
+     * Extrai resultado qualitativo (Negativa/Positiva, etc)
+     */
+    extractQualitativeResult(block, keywords) {
+        const blockUpper = block.toUpperCase();
+
+        for (const keyword of keywords) {
+            if (blockUpper.includes('PARCIAL NEGATIVA')) {
+                return 'Parcial Neg';
+            }
+            if (blockUpper.includes('NEGATIVA') || blockUpper.includes('NÃO FORAM OBSERVADOS')) {
+                return 'Neg';
+            }
+            if (blockUpper.includes('POSITIVA')) {
+                return 'Pos';
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -661,15 +881,37 @@ class ExamParser {
     }
 
     /**
-     * Obtém itens da categoria LCR
+     * Obtém itens da categoria LCR (em ordem clínica)
      */
     getLCRItems() {
+        // Ordem clínica: aspecto, celularidade, bioquímica, microbiologia, molecular
+        const order = ['Asp', 'Cel', 'Hem', 'Dif', 'PT', 'Glic', 'Lac', 'ADA',
+            'Gram', 'Cult', 'pBAAR', 'CultMTB', 'GeneXpert',
+            'CitoOnco', 'PainelViral'];
+
         const items = [];
+        const lcrResults = {};
+
+        // Coleta todos os resultados de LCR
         for (const [key, data] of Object.entries(this.results)) {
             if (data.category === 'lcr') {
-                items.push(`${data.abbrev} ${data.value}`);
+                lcrResults[data.abbrev] = data.value;
             }
         }
+
+        // Adiciona na ordem definida
+        for (const abbrev of order) {
+            if (lcrResults[abbrev]) {
+                items.push(`${abbrev} ${lcrResults[abbrev]}`);
+                delete lcrResults[abbrev];
+            }
+        }
+
+        // Adiciona qualquer item restante não ordenado
+        for (const [abbrev, value] of Object.entries(lcrResults)) {
+            items.push(`${abbrev} ${value}`);
+        }
+
         return items;
     }
 
