@@ -42,12 +42,13 @@ const EXAM_MAPPINGS = {
     'MAGNESIO': { abbrev: 'Mg', category: 'gerais', unit: 'mg/dL' },
 
     // Gerais - Hepático
-    'TGO': { abbrev: 'TGO', category: 'gerais', unit: 'U/L' },
-    'AST': { abbrev: 'TGO', category: 'gerais', unit: 'U/L' },
-    'ASPARTATO AMINOTRANSFERASE': { abbrev: 'TGO', category: 'gerais', unit: 'U/L' },
-    'TGP': { abbrev: 'TGP', category: 'gerais', unit: 'U/L' },
-    'ALT': { abbrev: 'TGP', category: 'gerais', unit: 'U/L' },
-    'ALANINA AMINOTRANSFERASE': { abbrev: 'TGP', category: 'gerais', unit: 'U/L' },
+    'TGO': { abbrev: 'AST', category: 'gerais', unit: 'U/L' },
+    'AST': { abbrev: 'AST', category: 'gerais', unit: 'U/L' },
+    'ASPARTATO AMINOTRANSFERASE': { abbrev: 'AST', category: 'gerais', unit: 'U/L' },
+    'ASPARTATO AMINO TRANSFERASE': { abbrev: 'AST', category: 'gerais', unit: 'U/L' },
+    'TGP': { abbrev: 'ALT', category: 'gerais', unit: 'U/L' },
+    'ALT': { abbrev: 'ALT', category: 'gerais', unit: 'U/L' },
+    'ALANINA AMINOTRANSFERASE': { abbrev: 'ALT', category: 'gerais', unit: 'U/L' },
     'BILIRRUBINA TOTAL': { abbrev: 'BT', category: 'gerais', unit: 'mg/dL' },
     'BILIRRUBINA DIRETA': { abbrev: 'BD', category: 'gerais', unit: 'mg/dL' },
     'PROTEÍNAS TOTAIS': { abbrev: 'PT', category: 'gerais', unit: 'g/dL' },
@@ -112,6 +113,20 @@ const EXAM_MAPPINGS = {
     'GLICEMIA': { abbrev: 'Glic', category: 'metabolico', unit: 'mg/dL' },
     'HEMOGLOBINA GLICADA': { abbrev: 'HbGlic', category: 'metabolico', unit: '%' },
     'HBA1C': { abbrev: 'HbGlic', category: 'metabolico', unit: '%' },
+    // Colesterol Não-HDL (deve ser ignorado - vem ANTES de HDL para evitar match parcial)
+    'NÃO - HDL - COLESTEROL': { abbrev: null, category: 'ignore', unit: 'mg/dL' },
+    'NÃO-HDL-COLESTEROL': { abbrev: null, category: 'ignore', unit: 'mg/dL' },
+    'NÃO - HDL': { abbrev: null, category: 'ignore', unit: 'mg/dL' },
+    'NÃO-HDL': { abbrev: null, category: 'ignore', unit: 'mg/dL' },
+    'NAO - HDL - COLESTEROL': { abbrev: null, category: 'ignore', unit: 'mg/dL' },
+    'NAO-HDL-COLESTEROL': { abbrev: null, category: 'ignore', unit: 'mg/dL' },
+    'NAO - HDL': { abbrev: null, category: 'ignore', unit: 'mg/dL' },
+    'NAO-HDL': { abbrev: null, category: 'ignore', unit: 'mg/dL' },
+    'COLESTEROL NÃO HDL': { abbrev: null, category: 'ignore', unit: 'mg/dL' },
+    'COLESTEROL NAO HDL': { abbrev: null, category: 'ignore', unit: 'mg/dL' },
+    'COLESTEROL NÃO-HDL': { abbrev: null, category: 'ignore', unit: 'mg/dL' },
+    'COLESTEROL NAO-HDL': { abbrev: null, category: 'ignore', unit: 'mg/dL' },
+    // HDL (após não-HDL para evitar match parcial)
     'HDL': { abbrev: 'HDL', category: 'metabolico', unit: 'mg/dL' },
     'HDL-COLESTEROL': { abbrev: 'HDL', category: 'metabolico', unit: 'mg/dL' },
     'HDL - COLESTEROL': { abbrev: 'HDL', category: 'metabolico', unit: 'mg/dL' },
@@ -127,6 +142,9 @@ const EXAM_MAPPINGS = {
     'BNP': { abbrev: 'NT-proBNP', category: 'cardio', unit: 'pg/mL' },
     'TSH': { abbrev: 'TSH', category: 'metabolico', unit: 'µUI/mL' },
     'HORMÔNIO TIREO-ESTIMULANTE': { abbrev: 'TSH', category: 'metabolico', unit: 'µUI/mL' },
+    'HORMÔNIO TIREO-ESTIMULANTE (TSH)': { abbrev: 'TSH', category: 'metabolico', unit: 'µUI/mL' },
+    'HORMONIO TIREO-ESTIMULANTE': { abbrev: 'TSH', category: 'metabolico', unit: 'µUI/mL' },
+    'HORMONIO TIREO-ESTIMULANTE (TSH)': { abbrev: 'TSH', category: 'metabolico', unit: 'µUI/mL' },
     'T4 LIVRE': { abbrev: 'T4L', category: 'metabolico', unit: 'ng/dL' },
     'T4L': { abbrev: 'T4L', category: 'metabolico', unit: 'ng/dL' },
     'VITAMINA B12': { abbrev: 'B12', category: 'metabolico', unit: 'pg/mL' },
@@ -263,8 +281,8 @@ const REFERENCE_VALUES = {
     'CaI': { min: 4.49, max: 5.29 },
 
     // Hepáticos
-    'TGO': { max: 34 },
-    'TGP': { max: 45 },
+    'AST': { max: 34 },
+    'ALT': { max: 45 },
     'BT': { max: 1.2 },
     'BD': { max: 0.5 },
     'FA': { max: 129 },
@@ -795,13 +813,26 @@ class ExamParser {
         const examNameMatch = block.match(/([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\s\-]+)\s*-\s*SANGUE|([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\s\-]+)\s*-\s*,/i);
         const blockUpper = block.toUpperCase();
 
+        // Ordena mapeamentos por tamanho de nome (mais longos primeiro)
+        // Isso evita que "HDL" faça match antes de "NÃO - HDL"
+        const sortedMappings = Object.entries(EXAM_MAPPINGS).sort((a, b) => b[0].length - a[0].length);
+
         // Tenta encontrar o exame no mapeamento
-        for (const [examName, mapping] of Object.entries(EXAM_MAPPINGS)) {
+        let foundMatch = false;
+        for (const [examName, mapping] of sortedMappings) {
             // Usa word boundary para evitar matches parciais (ex: LDL dentro de VLDL)
             const escapedName = examName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp('(^|[^A-Z])' + escapedName + '([^A-Z]|$)', 'i');
 
             if (regex.test(blockUpper)) {
+                // Se a categoria é 'ignore', significa que esse exame foi explicitamente
+                // marcado para ser ignorado (ex: colesterol não-HDL)
+                // Paramos aqui para evitar que um match mais curto (ex: HDL) seja capturado
+                if (mapping.category === 'ignore') {
+                    foundMatch = true;
+                    break;
+                }
+
                 let value = null;
 
                 // Tratamento especial para sorologias (resultados qualitativos)
@@ -812,8 +843,10 @@ class ExamParser {
                     value = this.extractValue(block, examName);
                 }
 
-                if (value !== null) {
+                if (value !== null && mapping.abbrev) {
                     this.storeResult(mapping.abbrev, mapping.category, value, date);
+                    foundMatch = true;
+                    break; // Para após encontrar o primeiro match válido
                 }
             }
         }
@@ -1014,8 +1047,8 @@ class ExamParser {
             output.push('- Cardio: ' + cardioItems.join(' | '));
         }
 
-        // Outros (itens não categorizados)
-        const outrosItems = this.getCategoryItems('outros');
+        // Outros (exames que não foram exibidos em nenhuma categoria acima)
+        const outrosItems = this.getOutrosItems();
         if (outrosItems.length > 0) {
             output.push('- Outros: ' + outrosItems.join(' | '));
         }
@@ -1190,11 +1223,11 @@ class ExamParser {
         if (plaq) items.push(`Plaq ${plaq}`);
 
         // Hepáticos
-        const tgo = this.findResult('gerais', 'TGO');
-        if (tgo) items.push(`TGO ${tgo}`);
+        const ast = this.findResult('gerais', 'AST');
+        if (ast) items.push(`AST ${ast}`);
 
-        const tgp = this.findResult('gerais', 'TGP');
-        if (tgp) items.push(`TGP ${tgp}`);
+        const alt = this.findResult('gerais', 'ALT');
+        if (alt) items.push(`ALT ${alt}`);
 
         const bt = this.findResult('gerais', 'BT');
         if (bt) items.push(`BT ${bt}`);
@@ -1326,6 +1359,53 @@ class ExamParser {
         // Depois adiciona quaisquer itens que não estejam na ordem (caso existam)
         for (const [key, data] of Object.entries(this.results)) {
             if (data.category === category && !order.includes(data.abbrev)) {
+                items.push(`${data.abbrev} ${data.value}`);
+            }
+        }
+
+        return items;
+    }
+
+    /**
+     * Obtém exames que não foram exibidos em nenhuma das categorias principais
+     */
+    getOutrosItems() {
+        // Lista de exames que já são tratados nas categorias específicas
+        const geraisExams = ['Hb', 'VCM', 'Ht', 'Leuco', 'Plaq', 'AST', 'ALT', 'BT', 'BD', 'INR', 'R', 'FA', 'GGT', 'AMIL', 'LIP', 'ALB', 'PT'];
+        const renalExams = ['Cr', 'Ur', 'Na', 'K', 'Cl', 'Ca', 'CaI', 'P', 'Mg'];
+        const metabolicoExams = ['Glic', 'HbGlic', 'HDL', 'LDL', 'VLDL', 'ColT', 'Trig', 'TSH', 'T4L', 'B12', 'AF', 'VitD', 'PTH', 'CPK', 'Fe', 'Ferritina', 'CTLF', 'STf', 'DHL'];
+        const sorologiasExams = ['HepB.Anti-HBc', 'HepB.Anti-HBs', 'HepB.Ag-HBs', 'HepB.Ag-HBe', 'HepC', 'Anti-HIV', 'VDRL', 'CMV.IgG', 'CMV.IgM', 'VZV.IgG', 'VZV.IgM', 'HSV.IgG', 'HSV.IgM', 'HTLV.IgG', 'HTLV.IgM', 'TOXO.IgG', 'TOXO.IgM'];
+        const reumatoExams = ['PCR', 'VHS', 'FR', 'FAN', 'Anti-Ro', 'Anti-La', 'Anti-MPO', 'Anti-PR3', 'anti-dsDNA', 'anti-Sm', 'C3', 'C4', 'IFS', 'EFPS', 'Igk', 'Igl', 'RKL'];
+        const trombofiliasExams = ['Anticoagulante lúpico', 'Anticardiolipina IgG', 'Anticardiolipina IgM', 'Anti-beta-2-glicoproteína', 'Proteína C', 'Proteína S', 'Antitrombina III', 'Mutação fator V de Leiden', 'Mutação de protrombina', 'Dosagem de homocisteína', 'EFH', 'DD', 'Fibrinogênio'];
+        const niveisExams = ['VPA', 'PHT', 'LEV', 'CBZ', 'PB', 'LTG'];
+        const cardioExams = ['Tropo-T', 'NT-proBNP'];
+        const lcrExams = ['PT', 'Glico', 'Lac', 'ADA', 'Cel', 'Hem', 'Dif', 'Asp', 'Gram', 'Cult', 'CultMTB', 'pBAAR', 'GeneXpert', 'CitoOnco', 'BOC'];
+        const leucogramaExams = ['N', 'Ly', 'Mo', 'Eo'];
+
+        // Combina todos os exames tratados
+        const handledExams = new Set([
+            ...geraisExams,
+            ...renalExams,
+            ...metabolicoExams,
+            ...sorologiasExams,
+            ...reumatoExams,
+            ...trombofiliasExams,
+            ...niveisExams,
+            ...cardioExams,
+            ...lcrExams,
+            ...leucogramaExams
+        ]);
+
+        const items = [];
+
+        // Encontra exames que não estão na lista de tratados
+        for (const [key, data] of Object.entries(this.results)) {
+            // Ignora categorias especiais
+            if (data.category === 'lcr' || data.category === 'ignore' || data.category === 'leucograma') {
+                continue;
+            }
+
+            if (!handledExams.has(data.abbrev)) {
                 items.push(`${data.abbrev} ${data.value}`);
             }
         }
