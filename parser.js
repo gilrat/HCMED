@@ -729,7 +729,10 @@ class ExamParser {
 
         // Citologia Oncótica
         if (blockUpper.includes('CITOLOGIA ONCÓTICA') || blockUpper.includes('CITOLOGIA ONCOTICA')) {
-            if (blockUpper.includes('NEGATIVA') || blockUpper.includes('AUSENCIA DE CÉLULAS NEOPLASICAS') || blockUpper.includes('AUSENCIA DE CELULAS NEOPLASICAS')) {
+            // Primeiro verifica se está aguardando revisão
+            if (blockUpper.includes('AGUARDAR REVISÃO') || blockUpper.includes('AGUARDAR REVISAO')) {
+                this.storeResult('CitoOnco', 'lcr', 'Aguarda revisão', date);
+            } else if (blockUpper.includes('NEGATIVA') || blockUpper.includes('AUSENCIA DE CÉLULAS NEOPLASICAS') || blockUpper.includes('AUSENCIA DE CELULAS NEOPLASICAS')) {
                 this.storeResult('CitoOnco', 'lcr', 'Neg', date);
             } else if (blockUpper.includes('POSITIVA') || blockUpper.includes('CÉLULAS NEOPLÁSICAS')) {
                 this.storeResult('CitoOnco', 'lcr', 'Pos', date);
@@ -765,6 +768,11 @@ class ExamParser {
             const found = patterns.some(p => blockUpper.includes(p));
 
             if (found) {
+                // Ignorar exames suspensos ou cancelados - não conta como testado
+                if (blockUpper.includes('EXAME SUSPENSO') || blockUpper.includes('EXAME CANCELADO')) {
+                    continue;
+                }
+
                 // Marca que fizemos este teste viral
                 if (!this.lcrData.viralTested) this.lcrData.viralTested = [];
                 if (!this.lcrData.viralTested.includes(test.name)) {
@@ -1161,11 +1169,46 @@ class ExamParser {
         }
 
         // Painel viral - baseado no tracking de lcrData
-        if (this.lcrData.viralTested && this.lcrData.viralTested.length > 0) {
-            if (this.lcrData.viralPositive && this.lcrData.viralPositive.length > 0) {
-                items.push(`Painel viral: ${this.lcrData.viralPositive.join(', ')}`);
+        // Os 10 vírus do painel: HSV1, HSV2, VZV, CMV, EBV, HHV6, HHV7, EV, AdV, B19
+        // Sempre mostrar quando houver qualquer exame de LCR
+        const COMPLETE_VIRAL_PANEL = ['HSV1', 'HSV2', 'VZV', 'CMV', 'EBV', 'HHV6', 'HHV7', 'EV', 'AdV', 'B19'];
+        const hasAnyLCRResults = Object.keys(lcrResults).length > 0;
+
+        if (hasAnyLCRResults) {
+            if (this.lcrData.viralTested && this.lcrData.viralTested.length > 0) {
+                const testedCount = this.lcrData.viralTested.length;
+                const totalViruses = COMPLETE_VIRAL_PANEL.length;
+                const hasPositive = this.lcrData.viralPositive && this.lcrData.viralPositive.length > 0;
+
+                if (testedCount >= totalViruses) {
+                    // Painel completo
+                    if (hasPositive) {
+                        items.push(`Painel viral: ${this.lcrData.viralPositive.join(', ')}`);
+                    } else {
+                        items.push('Painel viral negativo');
+                    }
+                } else {
+                    // Painel incompleto - aguarda resultado
+                    const testedNegative = this.lcrData.viralTested.filter(v =>
+                        !this.lcrData.viralPositive || !this.lcrData.viralPositive.some(p => p.startsWith(v))
+                    );
+                    const partialResults = [];
+                    if (hasPositive) {
+                        partialResults.push(...this.lcrData.viralPositive);
+                    }
+                    if (testedNegative.length > 0) {
+                        partialResults.push(...testedNegative.map(v => `${v}-`));
+                    }
+
+                    if (partialResults.length > 0) {
+                        items.push(`Painel viral: aguarda resultado (${partialResults.join(', ')})`);
+                    } else {
+                        items.push(`Painel viral: aguarda resultado`);
+                    }
+                }
             } else {
-                items.push('Painel viral negativo');
+                // Nenhum teste viral encontrado ainda - aguarda resultado
+                items.push('Painel viral: aguarda resultado');
             }
         }
 
