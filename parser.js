@@ -654,7 +654,7 @@ class ExamParser {
             if (cellMatch) {
                 this.storeResult('Cel', 'lcr', cellMatch[1], date);
             }
-            if (hemaciasMatch && parseInt(hemaciasMatch[1]) > 0) {
+            if (hemaciasMatch) {
                 this.storeResult('Hem', 'lcr', hemaciasMatch[1], date);
             }
         }
@@ -1106,8 +1106,8 @@ class ExamParser {
             items.push(celStr);
         }
 
-        // Hemácias (só mostra se > 0)
-        if (lcrResults['Hem'] && lcrResults['Hem'] !== '0') {
+        // Hemácias (sempre mostra se existe valor)
+        if (lcrResults['Hem'] !== undefined) {
             items.push(`Hem ${lcrResults['Hem']}`);
         }
 
