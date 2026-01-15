@@ -1080,6 +1080,7 @@ class ExamParser {
         const output = [];
         const categoryMap = {
             'gerais': 'Gerais',
+            'renal': 'Renal',
             'gasometria': 'Gasometria',
             'metabolico': 'Metabólico',
             'reumato': 'Reumato/autoimune',
@@ -1089,6 +1090,9 @@ class ExamParser {
             'cardio': 'Cardio',
             'lcr': 'LCR'
         };
+
+        // Exames que pertencem à categoria Renal (mesmo estando em 'gerais')
+        const renalExams = new Set(['Cr', 'Ur', 'Na', 'K', 'Ca', 'CaI', 'Mg', 'P', 'Cl']);
 
         // Agrupa todos os resultados por categoria e depois por data
         const categorized = {};
@@ -1105,8 +1109,13 @@ class ExamParser {
         }
 
         for (const result of this.allResults) {
-            const category = result.category;
+            let category = result.category;
             if (category === 'ignore' || category === 'leucograma') continue;
+
+            // Redireciona exames renais para a categoria 'renal'
+            if (category === 'gerais' && renalExams.has(result.abbrev)) {
+                category = 'renal';
+            }
 
             // Se onlyRecent, só inclui se for a data mais recente deste exame
             if (onlyRecent) {
@@ -1166,7 +1175,7 @@ class ExamParser {
         // Formata a saída
         output.push('> LABORATORIAIS');
 
-        const categoryOrder = ['gerais', 'gasometria', 'metabolico', 'reumato', 'trombofilias', 'sorologias', 'niveis', 'cardio'];
+        const categoryOrder = ['gerais', 'gasometria', 'renal', 'metabolico', 'reumato', 'trombofilias', 'sorologias', 'niveis', 'cardio'];
 
         for (const cat of categoryOrder) {
             if (!categorized[cat]) continue;
