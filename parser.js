@@ -1073,6 +1073,148 @@ class ExamParser {
     }
 
     /**
+     * Formata a saída agrupada por data
+     * @param {boolean} onlyRecent - Se true, mostra apenas o resultado mais recente de cada exame
+     */
+    formatOutputByDate(onlyRecent = false) {
+        const output = [];
+        const categoryMap = {
+            'gerais': 'Gerais',
+            'gasometria': 'Gasometria',
+            'metabolico': 'Metabólico',
+            'reumato': 'Reumato/autoimune',
+            'trombofilias': 'Trombofilias',
+            'sorologias': 'Sorologias',
+            'niveis': 'Níveis séricos',
+            'cardio': 'Cardio',
+            'lcr': 'LCR'
+        };
+
+        // Agrupa todos os resultados por categoria e depois por data
+        const categorized = {};
+
+        // Se onlyRecent, primeiro encontrar a data mais recente de cada exame
+        const mostRecentExam = {};
+        if (onlyRecent) {
+            for (const result of this.allResults) {
+                const examKey = `${result.category}_${result.abbrev}`;
+                if (!mostRecentExam[examKey] || result.date > mostRecentExam[examKey]) {
+                    mostRecentExam[examKey] = result.date;
+                }
+            }
+        }
+
+        for (const result of this.allResults) {
+            const category = result.category;
+            if (category === 'ignore' || category === 'leucograma') continue;
+
+            // Se onlyRecent, só inclui se for a data mais recente deste exame
+            if (onlyRecent) {
+                const examKey = `${result.category}_${result.abbrev}`;
+                if (result.date.getTime() !== mostRecentExam[examKey].getTime()) {
+                    continue;
+                }
+            }
+
+            if (!categorized[category]) {
+                categorized[category] = {};
+            }
+
+            const dateKey = this.formatDateShort(result.date);
+            if (!categorized[category][dateKey]) {
+                categorized[category][dateKey] = { date: result.date, items: [] };
+            }
+
+            categorized[category][dateKey].items.push(`${result.abbrev} ${result.value}`);
+        }
+
+        // Adiciona gasometrias
+        for (const gasData of this.allGasometrias) {
+            const category = 'gasometria';
+            if (!categorized[category]) {
+                categorized[category] = {};
+            }
+
+            // Se onlyRecent, filtra gasometrias também
+            if (onlyRecent) {
+                // Para gasometrias, verifica se esta é a mais recente do tipo
+                const isNewest = !this.allGasometrias.some(g =>
+                    g.type === gasData.type && g.date > gasData.date
+                );
+                if (!isNewest) continue;
+            }
+
+            const dateKey = this.formatDateShort(gasData.date);
+            if (!categorized[category][dateKey]) {
+                categorized[category][dateKey] = { date: gasData.date, items: [] };
+            }
+
+            const gasItems = [];
+            const prefix = gasData.type;
+            if (gasData.pH) gasItems.push(`${prefix}.pH ${gasData.pH}`);
+            if (gasData.pO2 && prefix === 'GA') gasItems.push(`${prefix}.pO2 ${gasData.pO2}`);
+            if (gasData.pCO2) gasItems.push(`${prefix}.pCO2 ${gasData.pCO2}`);
+            if (gasData.BIC) gasItems.push(`${prefix}.BIC ${gasData.BIC}`);
+            if (gasData.LAC) gasItems.push(`${prefix}.LAC ${gasData.LAC}`);
+            if (gasData.SO2 && prefix === 'GA') gasItems.push(`${prefix}.SO2 ${gasData.SO2}`);
+
+            if (gasItems.length > 0) {
+                categorized[category][dateKey].items.push(...gasItems);
+            }
+        }
+
+        // Formata a saída
+        output.push('> LABORATORIAIS');
+
+        const categoryOrder = ['gerais', 'gasometria', 'metabolico', 'reumato', 'trombofilias', 'sorologias', 'niveis', 'cardio'];
+
+        for (const cat of categoryOrder) {
+            if (!categorized[cat]) continue;
+
+            const categoryName = categoryMap[cat] || cat;
+            output.push(`- ${categoryName}:`);
+
+            // Ordena as datas (mais antigas primeiro)
+            const dates = Object.entries(categorized[cat])
+                .sort((a, b) => a[1].date - b[1].date);
+
+            for (const [dateKey, data] of dates) {
+                if (data.items.length > 0) {
+                    output.push(`  - ${dateKey}: ${data.items.join(' | ')}`);
+                }
+            }
+        }
+
+        // LCR por data
+        if (categorized['lcr']) {
+            output.push('');
+            output.push('> LCR');
+            output.push('- LCR:');
+
+            const dates = Object.entries(categorized['lcr'])
+                .sort((a, b) => a[1].date - b[1].date);
+
+            for (const [dateKey, data] of dates) {
+                if (data.items.length > 0) {
+                    output.push(`  - ${dateKey}: ${data.items.join(' | ')}`);
+                }
+            }
+        }
+
+        return output.join('\n');
+    }
+
+    /**
+     * Formata data no formato curto (DD/MM/AA)
+     */
+    formatDateShort(date) {
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = String(date.getFullYear()).slice(-2);
+        return `${day}/${month}/${year}`;
+    }
+
+    /**
      * Obtém itens da categoria LCR (em ordem clínica com formatação especial)
      */
     getLCRItems() {
@@ -1565,20 +1707,27 @@ document.addEventListener('DOMContentLoaded', () => {
     let isAscending = true; // true = antigo -> recente
     let currentTableData = null;
     let isHighlightActive = false;
+    let isDateGroupActive = false;
+    let isOnlyRecentActive = false;
     const highlightBtn = document.getElementById('highlightBtn');
+    const dateGroupBtn = document.getElementById('dateGroupBtn');
+    const onlyRecentBtn = document.getElementById('onlyRecentBtn');
 
-    // Processar exames
-    processBtn.addEventListener('click', () => {
+    // Função para renderizar o resultado com as opções ativas
+    function renderResult() {
         const rawText = inputData.value.trim();
-
-        if (!rawText) {
-            showToast('Por favor, cole os dados dos exames primeiro.', 'warning');
-            return;
-        }
+        if (!rawText) return;
 
         try {
-            const result = parser.parse(rawText);
+            parser.parse(rawText);
             const stats = parser.getStats();
+
+            let result;
+            if (isDateGroupActive) {
+                result = parser.formatOutputByDate(isOnlyRecentActive);
+            } else {
+                result = parser.formatOutput();
+            }
 
             // Atualiza a UI
             resultPlaceholder.style.display = 'none';
@@ -1597,9 +1746,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? formatDate(stats.mostRecentDate)
                 : '-';
 
-            showToast('Exames processados com sucesso!', 'success');
+            return true;
         } catch (error) {
             console.error('Erro ao processar:', error);
+            return false;
+        }
+    }
+
+    // Processar exames
+    processBtn.addEventListener('click', () => {
+        const rawText = inputData.value.trim();
+
+        if (!rawText) {
+            showToast('Por favor, cole os dados dos exames primeiro.', 'warning');
+            return;
+        }
+
+        if (renderResult()) {
+            showToast('Exames processados com sucesso!', 'success');
+        } else {
             showToast('Erro ao processar os dados. Verifique o formato.', 'error');
         }
     });
@@ -1877,6 +2042,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Aplica highlight no resultado textual
         applyTextHighlighting();
+    });
+
+    // Separar por data
+    dateGroupBtn.addEventListener('click', () => {
+        isDateGroupActive = !isDateGroupActive;
+        dateGroupBtn.classList.toggle('highlight-active', isDateGroupActive);
+        dateGroupBtn.textContent = isDateGroupActive ? 'Agrupar Recentes' : 'Separar por Data';
+
+        // Mostra ou esconde o botão "Apenas Recentes"
+        if (isDateGroupActive) {
+            onlyRecentBtn.style.display = 'inline-block';
+        } else {
+            onlyRecentBtn.style.display = 'none';
+            isOnlyRecentActive = false;
+            onlyRecentBtn.classList.remove('highlight-active');
+            onlyRecentBtn.textContent = 'Apenas Recentes';
+        }
+
+        // Re-renderiza o resultado se houver dados
+        if (resultContent.textContent) {
+            renderResult();
+        }
+    });
+
+    // Apenas resultados mais recentes
+    onlyRecentBtn.addEventListener('click', () => {
+        isOnlyRecentActive = !isOnlyRecentActive;
+        onlyRecentBtn.classList.toggle('highlight-active', isOnlyRecentActive);
+        onlyRecentBtn.textContent = isOnlyRecentActive ? 'Mostrar Todos' : 'Apenas Recentes';
+
+        // Re-renderiza o resultado se houver dados
+        if (resultContent.textContent) {
+            renderResult();
+        }
     });
 
     // Aplica destaque nos resultados textuais
