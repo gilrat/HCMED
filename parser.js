@@ -505,6 +505,8 @@ class ExamParser {
             this.parseHemograma(block, collectionDate);
         } else if (block.includes('LCR') || block.includes('LÍQUOR') || block.includes('LIQUOR')) {
             this.parseLCR(block, collectionDate);
+        } else if (block.includes('URINA TIPO 1') || block.includes('URINA 1')) {
+            this.parseUrina1(block, collectionDate);
         } else {
             this.parseGenericExam(block, collectionDate);
         }
@@ -793,6 +795,108 @@ class ExamParser {
     }
 
     /**
+     * Parseia exame de Urina Tipo 1
+     */
+    parseUrina1(block, date) {
+        const blockUpper = block.toUpperCase();
+
+        // Leucócitos /campo
+        const leucoMatch = block.match(/Leucocitos?\s*:\s*(\d+)\s*\/campo/i);
+        if (leucoMatch) {
+            this.storeResult('U1.Leuco', 'urina1', leucoMatch[1], date);
+        }
+
+        // Eritrócitos /campo
+        const eritroMatch = block.match(/Eritr[oó]citos?\s*:\s*(\d+)\s*\/campo/i);
+        if (eritroMatch) {
+            this.storeResult('U1.Eritro', 'urina1', eritroMatch[1], date);
+        }
+
+        // Proteínas
+        const protMatch = block.match(/Proteinas?\s*:\s*([^\t\n]+?)(?:\t|Inferior|$)/i);
+        if (protMatch) {
+            let protValue = protMatch[1].trim();
+            // Se tiver "Inferior a X g/L", pega isso
+            const inferiorMatch = block.match(/Proteinas?\s*:\s*Inferior a ([^\t\n]+)/i);
+            if (inferiorMatch) {
+                protValue = `<${inferiorMatch[1].trim()}`;
+            }
+            if (protValue) {
+                this.storeResult('U1.Prot', 'urina1', protValue, date);
+            }
+        }
+
+        // Nitrito
+        if (blockUpper.includes('NITRITO')) {
+            const nitMatch = block.match(/Nitrito\s*:\s*(Negativo|Positivo)/i);
+            if (nitMatch) {
+                const value = nitMatch[1].toLowerCase() === 'negativo' ? 'neg' : 'pos';
+                this.storeResult('U1.Nit', 'urina1', value, date);
+            }
+        }
+
+        // Leucócito esterase
+        if (blockUpper.includes('LEUCÓCITO ESTERASE') || blockUpper.includes('LEUCOCITO ESTERASE')) {
+            const leucoEstMatch = block.match(/Leuc[oó]cito esterase\s*:\s*(Negativo|Positivo|[^\t\n]+)/i);
+            if (leucoEstMatch) {
+                let value = leucoEstMatch[1].trim();
+                if (value.toLowerCase() === 'negativo') value = 'neg';
+                else if (value.toLowerCase() === 'positivo') value = 'pos';
+                this.storeResult('U1.LeucoEst', 'urina1', value, date);
+            }
+        }
+
+        // Urobilinogênio
+        const urobilMatch = block.match(/Urobilinogenio\s*:\s*([\d,\.]+)\s*mg\/dL/i);
+        if (urobilMatch) {
+            this.storeResult('U1.Urobil', 'urina1', this.normalizeNumber(urobilMatch[1]), date);
+        }
+
+        // pH
+        const phMatch = block.match(/\bpH\s*:\s*([\d,\.]+)/i);
+        if (phMatch) {
+            this.storeResult('U1.pH', 'urina1', this.normalizeNumber(phMatch[1]), date);
+        }
+
+        // Densidade
+        const densMatch = block.match(/Densidade\s*:\s*([\d,\.]+)/i);
+        if (densMatch) {
+            this.storeResult('U1.Dens', 'urina1', this.normalizeNumber(densMatch[1]), date);
+        }
+
+        // Glicose
+        const glicoseMatch = block.match(/Glicose\s*:\s*(Negativo|Positivo|[^\t\n]+)/i);
+        if (glicoseMatch) {
+            let value = glicoseMatch[1].trim();
+            if (value.toLowerCase() === 'negativo' || value.toLowerCase() === 'ausente') value = 'neg';
+            else if (value.toLowerCase() === 'positivo') value = 'pos';
+            this.storeResult('U1.Glic', 'urina1', value, date);
+        }
+
+        // Sangue/Hemoglobina
+        if (blockUpper.includes('SANGUE')) {
+            const sangueMatch = block.match(/Sangue\s*:\s*(Ausente|Presente|[^\t\n]+)/i);
+            if (sangueMatch) {
+                let value = sangueMatch[1].trim();
+                if (value.toLowerCase() === 'ausente') value = 'neg';
+                else if (value.toLowerCase().includes('presente')) value = 'pos';
+                this.storeResult('U1.Sangue', 'urina1', value, date);
+            }
+        }
+
+        // Corpos Cetônicos
+        if (blockUpper.includes('CORPOS CETONICOS') || blockUpper.includes('CORPOS CETÔNICOS')) {
+            const cetoMatch = block.match(/Corpos Ceton?icos\s*:\s*([^\t\n]+)/i);
+            if (cetoMatch) {
+                let value = cetoMatch[1].trim();
+                if (value.toLowerCase() === 'ausente') value = 'neg';
+                else if (value.toLowerCase().includes('presença')) value = 'pos';
+                this.storeResult('U1.Ceto', 'urina1', value, date);
+            }
+        }
+    }
+
+    /**
      * Extrai resultado qualitativo (Negativa/Positiva, etc)
      */
     extractQualitativeResult(block, keywords) {
@@ -1055,6 +1159,12 @@ class ExamParser {
             output.push('- Cardio: ' + cardioItems.join(' | '));
         }
 
+        // Urina 1
+        const urina1Items = this.getUrina1Items();
+        if (urina1Items.length > 0) {
+            output.push('- Urina 1: ' + urina1Items.join(' | '));
+        }
+
         // Outros (exames que não foram exibidos em nenhuma categoria acima)
         const outrosItems = this.getOutrosItems();
         if (outrosItems.length > 0) {
@@ -1088,6 +1198,7 @@ class ExamParser {
             'sorologias': 'Sorologias',
             'niveis': 'Níveis séricos',
             'cardio': 'Cardio',
+            'urina1': 'Urina 1',
             'lcr': 'LCR'
         };
 
@@ -1175,7 +1286,7 @@ class ExamParser {
         // Formata a saída
         output.push('> LABORATORIAIS');
 
-        const categoryOrder = ['gerais', 'gasometria', 'renal', 'metabolico', 'reumato', 'trombofilias', 'sorologias', 'niveis', 'cardio'];
+        const categoryOrder = ['gerais', 'gasometria', 'renal', 'metabolico', 'reumato', 'trombofilias', 'sorologias', 'niveis', 'cardio', 'urina1'];
 
         for (const cat of categoryOrder) {
             if (!categorized[cat]) continue;
@@ -1561,6 +1672,30 @@ class ExamParser {
     }
 
     /**
+     * Obtém itens de Urina Tipo 1 em ordem clínica
+     */
+    getUrina1Items() {
+        const order = ['U1.Leuco', 'U1.Eritro', 'U1.Prot', 'U1.Nit', 'U1.LeucoEst', 'U1.Urobil', 'U1.pH', 'U1.Dens', 'U1.Glic', 'U1.Sangue', 'U1.Ceto'];
+        const items = [];
+
+        for (const abbrev of order) {
+            const result = this.findResult('urina1', abbrev);
+            if (result !== null) {
+                items.push(`${abbrev} ${result}`);
+            }
+        }
+
+        // Adiciona quaisquer outros itens de urina1 não na lista
+        for (const [key, data] of Object.entries(this.results)) {
+            if (data.category === 'urina1' && !order.includes(data.abbrev)) {
+                items.push(`${data.abbrev} ${data.value}`);
+            }
+        }
+
+        return items;
+    }
+
+    /**
      * Obtém exames que não foram exibidos em nenhuma das categorias principais
      */
     getOutrosItems() {
@@ -1575,6 +1710,7 @@ class ExamParser {
         const cardioExams = ['Tropo-T', 'NT-proBNP'];
         const lcrExams = ['PT', 'Glico', 'Lac', 'ADA', 'Cel', 'Hem', 'Dif', 'Asp', 'Gram', 'Cult', 'CultMTB', 'pBAAR', 'GeneXpert', 'CitoOnco', 'BOC'];
         const leucogramaExams = ['N', 'Ly', 'Mo', 'Eo'];
+        const urina1Exams = ['U1.Leuco', 'U1.Eritro', 'U1.Prot', 'U1.Nit', 'U1.LeucoEst', 'U1.Urobil', 'U1.pH', 'U1.Dens', 'U1.Glic', 'U1.Sangue', 'U1.Ceto'];
 
         // Combina todos os exames tratados
         const handledExams = new Set([
@@ -1587,7 +1723,8 @@ class ExamParser {
             ...niveisExams,
             ...cardioExams,
             ...lcrExams,
-            ...leucogramaExams
+            ...leucogramaExams,
+            ...urina1Exams
         ]);
 
         const items = [];
@@ -1595,7 +1732,7 @@ class ExamParser {
         // Encontra exames que não estão na lista de tratados
         for (const [key, data] of Object.entries(this.results)) {
             // Ignora categorias especiais
-            if (data.category === 'lcr' || data.category === 'ignore' || data.category === 'leucograma') {
+            if (data.category === 'lcr' || data.category === 'ignore' || data.category === 'leucograma' || data.category === 'urina1') {
                 continue;
             }
 
