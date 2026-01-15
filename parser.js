@@ -1585,6 +1585,11 @@ document.addEventListener('DOMContentLoaded', () => {
             resultContent.textContent = result;
             resultContent.classList.add('active');
 
+            // Aplica highlighting se estiver ativo
+            if (isHighlightActive) {
+                applyTextHighlighting();
+            }
+
             // Mostra estatísticas
             statsSection.style.display = 'block';
             statTotal.textContent = stats.totalExams;
@@ -1788,7 +1793,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTableData = null;
     });
 
-    // Copiar resultado
+    // Copiar resultado com formatação (fonte Arial 11, valores alterados em vermelho)
     copyBtn.addEventListener('click', async () => {
         const text = resultContent.textContent;
 
@@ -1798,10 +1803,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            await navigator.clipboard.writeText(text);
+            // Obtém o HTML interno e aplica estilos inline para preservar formatação ao colar
+            let htmlContent = resultContent.innerHTML;
+
+            // Substitui os spans abnormal por spans com estilo inline vermelho
+            htmlContent = htmlContent.replace(
+                /<span class="abnormal">([^<]+)<\/span>/g,
+                '<span style="color: red;">$1</span>'
+            );
+
+            // Envolve todo o conteúdo com fonte Arial 11
+            const formattedHtml = `<div style="font-family: Arial, sans-serif; font-size: 11pt;">${htmlContent}</div>`;
+
+            // Cria blobs para HTML e texto
+            const htmlBlob = new Blob([formattedHtml], { type: 'text/html' });
+            const textBlob = new Blob([text], { type: 'text/plain' });
+
+            // Copia com a API Clipboard usando ClipboardItem
+            await navigator.clipboard.write([
+                new ClipboardItem({
+                    'text/html': htmlBlob,
+                    'text/plain': textBlob
+                })
+            ]);
+
             showToast('Copiado para a área de transferência!', 'success');
         } catch (error) {
-            fallbackCopy(text);
+            // Fallback para navegadores que não suportam clipboard.write
+            fallbackCopyWithFormatting(resultContent.innerHTML, text);
         }
     });
 
@@ -1870,7 +1899,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resultContent.innerHTML = processedLines.join('\n');
     }
 
-    // Fallback para copiar
+    // Fallback para copiar texto simples
     function fallbackCopy(text) {
         const textarea = document.createElement('textarea');
         textarea.value = text;
@@ -1878,6 +1907,37 @@ document.addEventListener('DOMContentLoaded', () => {
         textarea.select();
         document.execCommand('copy');
         document.body.removeChild(textarea);
+        showToast('Copiado para a área de transferência!', 'success');
+    }
+
+    // Fallback para copiar com formatação HTML
+    function fallbackCopyWithFormatting(htmlContent, plainText) {
+        // Aplica estilos inline para preservar formatação
+        htmlContent = htmlContent.replace(
+            /<span class="abnormal">([^<]+)<\/span>/g,
+            '<span style="color: red;">$1</span>'
+        );
+
+        const formattedHtml = `<div style="font-family: Arial, sans-serif; font-size: 11pt;">${htmlContent}</div>`;
+
+        // Cria um elemento temporário com o HTML formatado
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = formattedHtml;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        // Seleciona o conteúdo e copia
+        const range = document.createRange();
+        range.selectNodeContents(tempDiv);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        document.execCommand('copy');
+
+        selection.removeAllRanges();
+        document.body.removeChild(tempDiv);
         showToast('Copiado para a área de transferência!', 'success');
     }
 
