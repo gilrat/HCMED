@@ -2129,6 +2129,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 '<b>$1</b>'
             );
 
+            // Preserva espaços iniciais (indentação) convertendo para &nbsp;
+            // Isso mantém as linhas de data indentadas em relação às categorias
+            htmlContent = htmlContent.replace(/\n(\s+)/g, (match, spaces) => {
+                return '\n' + '&nbsp;'.repeat(spaces.length);
+            });
+
             // Converte quebras de linha em tags <br> para preservar no HTML
             htmlContent = htmlContent.replace(/\n/g, '<br>');
 
@@ -2277,6 +2283,11 @@ document.addEventListener('DOMContentLoaded', () => {
             /(&gt;[^\n<]+)/g,
             '<b>$1</b>'
         );
+
+        // Preserva espaços iniciais (indentação) convertendo para &nbsp;
+        htmlContent = htmlContent.replace(/\n(\s+)/g, (match, spaces) => {
+            return '\n' + '&nbsp;'.repeat(spaces.length);
+        });
 
         // Converte quebras de linha em tags <br>
         htmlContent = htmlContent.replace(/\n/g, '<br>');
