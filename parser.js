@@ -2123,6 +2123,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 '<span style="color: red;">$1</span>'
             );
 
+            // Coloca linhas que começam com ">" em negrito (cabeçalhos como "> LABORATORIAIS")
+            htmlContent = htmlContent.replace(
+                /(&gt;[^\n<]+)/g,
+                '<b>$1</b>'
+            );
+
             // Converte quebras de linha em tags <br> para preservar no HTML
             htmlContent = htmlContent.replace(/\n/g, '<br>');
 
@@ -2264,6 +2270,12 @@ document.addEventListener('DOMContentLoaded', () => {
         htmlContent = htmlContent.replace(
             /<span class="abnormal">([^<]+)<\/span>/g,
             '<span style="color: red;">$1</span>'
+        );
+
+        // Coloca linhas que começam com ">" em negrito
+        htmlContent = htmlContent.replace(
+            /(&gt;[^\n<]+)/g,
+            '<b>$1</b>'
         );
 
         // Converte quebras de linha em tags <br>
