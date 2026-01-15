@@ -1986,6 +1986,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 '<span style="color: red;">$1</span>'
             );
 
+            // Converte quebras de linha em tags <br> para preservar no HTML
+            htmlContent = htmlContent.replace(/\n/g, '<br>');
+
             // Envolve todo o conteúdo com fonte Arial 11
             const formattedHtml = `<div style="font-family: Arial, sans-serif; font-size: 11pt;">${htmlContent}</div>`;
 
@@ -2125,6 +2128,9 @@ document.addEventListener('DOMContentLoaded', () => {
             /<span class="abnormal">([^<]+)<\/span>/g,
             '<span style="color: red;">$1</span>'
         );
+
+        // Converte quebras de linha em tags <br>
+        htmlContent = htmlContent.replace(/\n/g, '<br>');
 
         const formattedHtml = `<div style="font-family: Arial, sans-serif; font-size: 11pt;">${htmlContent}</div>`;
 
