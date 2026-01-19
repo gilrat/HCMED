@@ -994,35 +994,42 @@ class ExamParser {
     extractSerologyResult(block) {
         const blockUpper = block.toUpperCase();
 
-        // Padrões para identificar resultados qualitativos
-        // Ordem importa: verificar "NÃO REAGENTE" antes de "REAGENTE"
-
-        // Verifica "Não Reagente" / "Nao Reagente"
-        if (blockUpper.includes('NÃO REAGENTE') || blockUpper.includes('NAO REAGENTE') ||
-            blockUpper.includes('AMOSTRA NÃO REAGENTE') || blockUpper.includes('AMOSTRA NAO REAGENTE')) {
-            return 'NR';
+        // PRIMEIRO: Busca especificamente a linha "Resultado:" que contém o resultado real
+        // Isso evita confusão com valores de referência que também contêm "Não Reagente" e "Reagente"
+        // Padrão: "Resultado:" seguido de espaços/tabs e depois o valor qualitativo
+        const resultLineMatch = block.match(/Resultado:\s*[\t\s]*([^\t\n]+?)(?:\t|Reagente:|Não Reagente:|$)/i);
+        if (resultLineMatch) {
+            const result = resultLineMatch[1].trim().toUpperCase();
+            if (result === 'NÃO REAGENTE' || result === 'NAO REAGENTE') return 'NR';
+            if (result === 'REAGENTE') return 'R';
+            if (result === 'INDETERMINADO') return 'IND';
         }
 
-        // Verifica "Resultado: Não Reagente"
-        const resultMatch = block.match(/Resultado:\s*(Não Reagente|Nao Reagente|Reagente|Indeterminado)/i);
-        if (resultMatch) {
-            const result = resultMatch[1].toUpperCase();
+        // SEGUNDO: Padrão alternativo - "Resultado:    Reagente" ou "Resultado:    Não Reagente"
+        // com tabs entre o label e o valor
+        const resultTabMatch = block.match(/Resultado:\s+\t\s*(Não Reagente|Nao Reagente|Reagente|Indeterminado)/i);
+        if (resultTabMatch) {
+            const result = resultTabMatch[1].toUpperCase();
             if (result.includes('NÃO') || result.includes('NAO')) return 'NR';
             if (result === 'REAGENTE') return 'R';
             if (result === 'INDETERMINADO') return 'IND';
         }
 
-        // Verifica apenas "Reagente" (depois de verificar "Não Reagente")
-        if (blockUpper.includes('REAGENTE') && !blockUpper.includes('NÃO REAGENTE') && !blockUpper.includes('NAO REAGENTE')) {
+        // TERCEIRO: Para exames como HIV que podem ter formato diferente
+        // Busca padrão de "AMOSTRA NÃO REAGENTE" ou similar
+        if ((blockUpper.includes('AMOSTRA NÃO REAGENTE') || blockUpper.includes('AMOSTRA NAO REAGENTE'))) {
+            return 'NR';
+        }
+        if (blockUpper.includes('AMOSTRA REAGENTE') && !blockUpper.includes('NÃO') && !blockUpper.includes('NAO')) {
             return 'R';
         }
 
-        // Verifica "Indeterminado"
+        // QUARTO: Verifica "Indeterminado"
         if (blockUpper.includes('INDETERMINADO')) {
             return 'IND';
         }
 
-        // Verifica "Negativo" / "Positivo"
+        // QUINTO: Verifica "Negativo" / "Positivo" (para exames com formato diferente)
         if (blockUpper.includes('NEGATIVO') || blockUpper.includes('NEGATIVE')) {
             return 'Neg';
         }
@@ -2130,7 +2137,6 @@ document.addEventListener('DOMContentLoaded', () => {
             );
 
             // Preserva espaços iniciais (indentação) convertendo para &nbsp;
-            // Isso mantém as linhas de data indentadas em relação às categorias
             htmlContent = htmlContent.replace(/\n(\s+)/g, (match, spaces) => {
                 return '\n' + '&nbsp;'.repeat(spaces.length);
             });
@@ -2248,8 +2254,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return line.replace(/<span class="abnormal">([^<]+)<\/span>/g, '$1');
             }
 
-            // Procura por padrões como "Na 145" ou "Cr 1.8"
-            return line.replace(/\b([A-Za-z]+(?:\.[A-Za-z]+)?)\s+([\d,\.]+(?:\s*[a-z%\/]+)?)/gi, (match, exam, value) => {
+            // Procura por padrões como "Na 145", "Cr 1.8" ou "NT-proBNP 701"
+            return line.replace(/\b([A-Za-z][A-Za-z0-9\-]*(?:\.[A-Za-z][A-Za-z0-9\-]*)?)\s+([\d,\.]+(?:\s*[a-z%\/]+)?)/gi, (match, exam, value) => {
                 if (isAbnormal(exam.trim(), value.trim())) {
                     return `<span class="abnormal">${exam} ${value}</span>`;
                 }
