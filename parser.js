@@ -87,8 +87,10 @@ const EXAM_MAPPINGS = {
     'ANTI-HIV': { abbrev: 'Anti-HIV', category: 'sorologias' },
     'HIV': { abbrev: 'Anti-HIV', category: 'sorologias' },
     'VDRL': { abbrev: 'VDRL', category: 'sorologias' },
-    'TREPONEMA PALLIDUM': { abbrev: 'VDRL', category: 'sorologias' },
-    'SOROLOGIA PARA TREPONEMA PALLIDUM': { abbrev: 'VDRL', category: 'sorologias' },
+    'FTA-ABS': { abbrev: 'FTA-ABS', category: 'sorologias' },
+    'FTA - ABS': { abbrev: 'FTA-ABS', category: 'sorologias' },
+    'TREPONEMA PALLIDUM': { abbrev: 'Sífilis', category: 'sorologias' },
+    'SOROLOGIA PARA TREPONEMA PALLIDUM': { abbrev: 'Sífilis', category: 'sorologias' },
     'CMV IGG': { abbrev: 'CMV.IgG', category: 'sorologias' },
     'CMV IGM': { abbrev: 'CMV.IgM', category: 'sorologias' },
     'CITOMEGALOVIRUS IGG': { abbrev: 'CMV.IgG', category: 'sorologias' },
@@ -356,6 +358,7 @@ const REFERENCE_VALUES = {
     // LCR (valores específicos para líquor - diferentes dos séricos)
     'Cel': { max: 4 },
     'Hem': { max: 0 },
+    'PT.lcr': { max: 45 },  // Proteínas Totais LCR (diferente do sérico)
     'Glico': { min: 50, max: 70 },  // Glicose LCR
     'Lac': { min: 1.1, max: 2.4 },  // Lactato LCR
 
@@ -376,31 +379,42 @@ const REFERENCE_VALUES = {
  * @returns {boolean} - true se o valor está alterado, false se normal ou não há referência
  */
 function isAbnormal(examName, value) {
+    // Trata valores qualitativos primeiro (sorologias, culturas, etc.)
+    if (typeof value === 'string') {
+        const valueLower = value.toLowerCase().trim();
+
+        // Valores qualitativos negativos são normais
+        const normalQualitative = ['nr', 'não reagente', 'nao reagente', 'negativo', 'neg', 'não detectado', 'nao detectado', 'ausência', 'ausencia', 'ausentes'];
+        if (normalQualitative.some(v => valueLower.includes(v))) {
+            return false;
+        }
+
+        // Valores qualitativos positivos são ANORMAIS (devem aparecer em vermelho)
+        const abnormalQualitative = ['reagente', 'positivo', 'pos', 'detectado', 'presentes', 'presente'];
+        // Também verifica "R" isolado (abreviação de Reagente)
+        if (valueLower === 'r' || abnormalQualitative.some(v => valueLower.includes(v))) {
+            return true;
+        }
+    }
+
+    // Para valores numéricos, verifica contra valores de referência
     const ref = REFERENCE_VALUES[examName];
     if (!ref) return false;
 
-    // Trata valores qualitativos
+    // Trata valores numéricos
+    let numValue = value;
     if (typeof value === 'string') {
-        // Valores qualitativos negativos são normais
-        const normalQualitative = ['nr', 'não reagente', 'negativo', 'neg', 'não detectado', 'ausência'];
-        if (normalQualitative.some(v => value.toLowerCase().includes(v))) {
-            return false;
-        }
         // Tenta extrair número
         const numMatch = value.match(/[\d,\.]+/);
         if (!numMatch) return false;
-        value = parseFloat(numMatch[0].replace(',', '.'));
-    } else if (typeof value === 'number') {
-        // OK
-    } else {
-        return false;
+        numValue = parseFloat(numMatch[0].replace(',', '.'));
     }
 
-    if (isNaN(value)) return false;
+    if (isNaN(numValue)) return false;
 
     // Verifica se está fora dos limites
-    if (ref.min !== undefined && value < ref.min) return true;
-    if (ref.max !== undefined && value > ref.max) return true;
+    if (ref.min !== undefined && numValue < ref.min) return true;
+    if (ref.max !== undefined && numValue > ref.max) return true;
 
     return false;
 }
@@ -621,7 +635,7 @@ class ExamParser {
         if (blockUpper.includes('PROTEÍNAS TOTAIS') || blockUpper.includes('PROTEINAS TOTAIS')) {
             const match = block.match(/PROTEÍNAS?\s+TOTAIS?\s+(\d+)\s*mg\/dL/i);
             if (match) {
-                this.storeResult('PT', 'lcr', match[1], date);
+                this.storeResult('PT.lcr', 'lcr', match[1], date);
             }
         }
 
@@ -666,11 +680,17 @@ class ExamParser {
             const linfoMatch = block.match(/Linfocitos?\s*:\s+(\d+)\s*%/i);
             const monoMatch = block.match(/Monócitos?\s*:\s+(\d+)\s*%/i) || block.match(/Monocitos?\s*:\s+(\d+)\s*%/i);
             const neutroMatch = block.match(/Neutrófilos?\s*:\s+(\d+)\s*%/i) || block.match(/Neutrofilos?\s*:\s+(\d+)\s*%/i);
+            const plasmoMatch = block.match(/Plasmocitos?\s*:\s+(\d+)\s*%/i) || block.match(/Plasmócitos?\s*:\s+(\d+)\s*%/i);
+            const macroMatch = block.match(/Macrofagos?\s*:\s+(\d+)\s*%/i) || block.match(/Macrófagos?\s*:\s+(\d+)\s*%/i);
+            const eosinoMatch = block.match(/Eosinófilos?\s*:\s+(\d+)\s*%/i) || block.match(/Eosinofilos?\s*:\s+(\d+)\s*%/i);
 
             const diffParts = [];
             if (linfoMatch) diffParts.push(`Ly ${linfoMatch[1]}%`);
             if (monoMatch) diffParts.push(`Mo ${monoMatch[1]}%`);
             if (neutroMatch) diffParts.push(`N ${neutroMatch[1]}%`);
+            if (plasmoMatch) diffParts.push(`Plas ${plasmoMatch[1]}%`);
+            if (macroMatch) diffParts.push(`Macro ${macroMatch[1]}%`);
+            if (eosinoMatch) diffParts.push(`Eo ${eosinoMatch[1]}%`);
 
             if (diffParts.length > 0) {
                 this.storeResult('Dif', 'lcr', diffParts.join(' '), date);
@@ -1015,7 +1035,21 @@ class ExamParser {
             if (result === 'INDETERMINADO') return 'IND';
         }
 
-        // TERCEIRO: Para exames como HIV que podem ter formato diferente
+        // TERCEIRO: Para exames como sífilis que têm formato:
+        // NOME_EXAME	 	Não Reagente	Não Reagente: <1,00
+        // O resultado vem diretamente após o nome do exame, antes do valor de referência
+        const directResultMatch = block.match(/PALLIDUM|TREPONEMA|VDRL|FTA[\s-]*ABS/i);
+        if (directResultMatch) {
+            // Busca o padrão específico desse formato
+            const syphilisMatch = block.match(/(?:PALLIDUM|TREPONEMA|VDRL|FTA[\s-]*ABS)\s+[\t\s]*(Não [Rr]eagente|Nao [Rr]eagente|[Rr]eagente)/i);
+            if (syphilisMatch) {
+                const result = syphilisMatch[1].toUpperCase();
+                if (result.includes('NÃO') || result.includes('NAO')) return 'NR';
+                if (result === 'REAGENTE') return 'R';
+            }
+        }
+
+        // QUARTO: Para exames como HIV que podem ter formato diferente
         // Busca padrão de "AMOSTRA NÃO REAGENTE" ou similar
         if ((blockUpper.includes('AMOSTRA NÃO REAGENTE') || blockUpper.includes('AMOSTRA NAO REAGENTE'))) {
             return 'NR';
@@ -1024,12 +1058,12 @@ class ExamParser {
             return 'R';
         }
 
-        // QUARTO: Verifica "Indeterminado"
+        // QUINTO: Verifica "Indeterminado"
         if (blockUpper.includes('INDETERMINADO')) {
             return 'IND';
         }
 
-        // QUINTO: Verifica "Negativo" / "Positivo" (para exames com formato diferente)
+        // SEXTO: Verifica "Negativo" / "Positivo" (para exames com formato diferente)
         if (blockUpper.includes('NEGATIVO') || blockUpper.includes('NEGATIVE')) {
             return 'Neg';
         }
@@ -1366,7 +1400,12 @@ class ExamParser {
             if (lcrResults['Dif']) {
                 // Formata diferencial: "Ly 88% Mo 12%" -> "(Linf 88%, Mono 12%)"
                 let dif = lcrResults['Dif'];
-                dif = dif.replace(/Ly\s*/g, 'Linf ').replace(/Mo\s*/g, 'Mono ').replace(/N\s*/g, 'Neutro ');
+                dif = dif.replace(/Ly\s*/g, 'Linf ')
+                    .replace(/Mo\s*/g, 'Mono ')
+                    .replace(/N\s*/g, 'Neutro ')
+                    .replace(/Plas\s*/g, 'Plasmo ')
+                    .replace(/Macro\s*/g, 'Macro ')
+                    .replace(/Eo\s*/g, 'Eosino ');
                 dif = dif.replace(/\s+/g, ' ').trim();
                 // Adiciona vírgulas entre os componentes
                 dif = dif.replace(/(\d+%)\s+/g, '$1, ');
@@ -1381,8 +1420,8 @@ class ExamParser {
         }
 
         // Proteínas
-        if (lcrResults['PT']) {
-            items.push(`Pt ${lcrResults['PT']}`);
+        if (lcrResults['PT.lcr']) {
+            items.push(`PT ${lcrResults['PT.lcr']}`);
         }
 
         // Glicose
@@ -1649,7 +1688,7 @@ class ExamParser {
     getCategoryItems(category) {
         // Ordem específica para cada categoria
         const orderMap = {
-            'sorologias': ['HepB.Anti-HBc', 'HepB.Anti-HBs', 'HepB.Ag-HBs', 'HepB.Ag-HBe', 'HepC', 'Anti-HIV', 'VDRL', 'CMV.IgG', 'CMV.IgM', 'VZV.IgG', 'VZV.IgM', 'HSV.IgG', 'HSV.IgM', 'HTLV.IgG', 'HTLV.IgM', 'TOXO.IgG', 'TOXO.IgM'],
+            'sorologias': ['HepB.Anti-HBc', 'HepB.Anti-HBs', 'HepB.Ag-HBs', 'HepB.Ag-HBe', 'HepC', 'Anti-HIV', 'Sífilis', 'VDRL', 'FTA-ABS', 'CMV.IgG', 'CMV.IgM', 'VZV.IgG', 'VZV.IgM', 'HSV.IgG', 'HSV.IgM', 'HTLV.IgG', 'HTLV.IgM', 'TOXO.IgG', 'TOXO.IgM'],
             'metabolico': ['Glic', 'HbGlic', 'HDL', 'LDL', 'VLDL', 'ColT', 'Trig', 'TSH', 'T4L', 'B12', 'AF', 'VitD', 'PTH', 'CPK', 'Fe', 'Ferritina', 'CTLF', 'STf', 'DHL'],
             'reumato': ['PCR', 'VHS', 'FR', 'FAN', 'Anti-Ro', 'Anti-La', 'Anti-MPO', 'Anti-PR3', 'anti-dsDNA', 'anti-Sm', 'C3', 'C4', 'IFS', 'EFPS', 'Igk', 'Igl', 'RKL'],
             'trombofilias': ['Anticoagulante lúpico', 'Anticardiolipina IgG', 'Anticardiolipina IgM', 'Anti-beta-2-glicoproteína', 'Proteína C', 'Proteína S', 'Antitrombina III', 'Mutação fator V de Leiden', 'Mutação de protrombina', 'Dosagem de homocisteína', 'EFH', 'DD', 'Fibrinogênio'],
@@ -1710,7 +1749,7 @@ class ExamParser {
         const geraisExams = ['Hb', 'VCM', 'Ht', 'Leuco', 'Plaq', 'AST', 'ALT', 'BT', 'BD', 'INR', 'R', 'FA', 'GGT', 'AMIL', 'LIP', 'ALB', 'PT'];
         const renalExams = ['Cr', 'Ur', 'Na', 'K', 'Cl', 'Ca', 'CaI', 'P', 'Mg'];
         const metabolicoExams = ['Glic', 'HbGlic', 'HDL', 'LDL', 'VLDL', 'ColT', 'Trig', 'TSH', 'T4L', 'B12', 'AF', 'VitD', 'PTH', 'CPK', 'Fe', 'Ferritina', 'CTLF', 'STf', 'DHL'];
-        const sorologiasExams = ['HepB.Anti-HBc', 'HepB.Anti-HBs', 'HepB.Ag-HBs', 'HepB.Ag-HBe', 'HepC', 'Anti-HIV', 'VDRL', 'CMV.IgG', 'CMV.IgM', 'VZV.IgG', 'VZV.IgM', 'HSV.IgG', 'HSV.IgM', 'HTLV.IgG', 'HTLV.IgM', 'TOXO.IgG', 'TOXO.IgM'];
+        const sorologiasExams = ['HepB.Anti-HBc', 'HepB.Anti-HBs', 'HepB.Ag-HBs', 'HepB.Ag-HBe', 'HepC', 'Anti-HIV', 'Sífilis', 'VDRL', 'FTA-ABS', 'CMV.IgG', 'CMV.IgM', 'VZV.IgG', 'VZV.IgM', 'HSV.IgG', 'HSV.IgM', 'HTLV.IgG', 'HTLV.IgM', 'TOXO.IgG', 'TOXO.IgM'];
         const reumatoExams = ['PCR', 'VHS', 'FR', 'FAN', 'Anti-Ro', 'Anti-La', 'Anti-MPO', 'Anti-PR3', 'anti-dsDNA', 'anti-Sm', 'C3', 'C4', 'IFS', 'EFPS', 'Igk', 'Igl', 'RKL'];
         const trombofiliasExams = ['Anticoagulante lúpico', 'Anticardiolipina IgG', 'Anticardiolipina IgM', 'Anti-beta-2-glicoproteína', 'Proteína C', 'Proteína S', 'Antitrombina III', 'Mutação fator V de Leiden', 'Mutação de protrombina', 'Dosagem de homocisteína', 'EFH', 'DD', 'Fibrinogênio'];
         const niveisExams = ['VPA', 'PHT', 'LEV', 'CBZ', 'PB', 'LTG'];
@@ -2001,7 +2040,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Adiciona exames da categoria
                 for (const exam of categoryExams) {
                     html += '<tr>';
-                    html += `<td>${exam}</td>`;
+                    // Nome de exibição amigável (PT.lcr -> PT)
+                    const displayName = exam === 'PT.lcr' ? 'PT' : exam;
+                    html += `<td>${displayName}</td>`;
 
                     for (const date of sortedDates) {
                         const value = data[date]?.[exam] || '';
@@ -2077,7 +2118,7 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             {
                 name: 'SOROLOGIAS',
-                exams: ['HepB.Anti-HBc', 'HepB.Anti-HBs', 'HepB.Ag-HBs', 'HepB.Ag-HBe', 'HepC', 'Anti-HIV', 'VDRL', 'CMV.IgG', 'CMV.IgM', 'VZV.IgG', 'VZV.IgM', 'HSV.IgG', 'HSV.IgM', 'HTLV.IgG', 'HTLV.IgM', 'TOXO.IgG', 'TOXO.IgM']
+                exams: ['HepB.Anti-HBc', 'HepB.Anti-HBs', 'HepB.Ag-HBs', 'HepB.Ag-HBe', 'HepC', 'Anti-HIV', 'Sífilis', 'VDRL', 'FTA-ABS', 'CMV.IgG', 'CMV.IgM', 'VZV.IgG', 'VZV.IgM', 'HSV.IgG', 'HSV.IgM', 'HTLV.IgG', 'HTLV.IgM', 'TOXO.IgG', 'TOXO.IgM']
             },
             {
                 name: 'NÍVEIS SÉRICOS',
@@ -2089,7 +2130,7 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             {
                 name: 'LCR',
-                exams: ['Cel', 'Hem', 'Dif', 'PT', 'Glico', 'Lac', 'ADA', 'Asp', 'Gram', 'Cult', 'CultMTB', 'pBAAR', 'GeneXpert', 'CitoOnco', 'BOC']
+                exams: ['Cel', 'Hem', 'Dif', 'PT.lcr', 'Glico', 'Lac', 'ADA', 'Asp', 'Gram', 'Cult', 'CultMTB', 'pBAAR', 'GeneXpert', 'CitoOnco', 'BOC']
             }
         ];
     }
@@ -2248,19 +2289,47 @@ document.addEventListener('DOMContentLoaded', () => {
     // Aplica destaque nos resultados textuais
     function applyTextHighlighting() {
         const lines = resultContent.innerHTML.split('\n');
+        let inLCRSection = false;
         const processedLines = lines.map(line => {
             if (!isHighlightActive) {
                 // Remove spans de highlight
                 return line.replace(/<span class="abnormal">([^<]+)<\/span>/g, '$1');
             }
 
-            // Procura por padrões como "Na 145", "Cr 1.8" ou "NT-proBNP 701"
-            return line.replace(/\b([A-Za-z][A-Za-z0-9\-]*(?:\.[A-Za-z][A-Za-z0-9\-]*)?)\s+([\d,\.]+(?:\s*[a-z%\/]+)?)/gi, (match, exam, value) => {
+            // Detecta se entramos na seção LCR
+            if (line.includes('> LCR') || line.includes('- LCR:')) {
+                inLCRSection = true;
+            }
+            // Detecta se saímos da seção LCR (nova categoria começando)
+            if (line.startsWith('- ') && !line.includes('LCR') && inLCRSection && !line.startsWith('  -')) {
+                inLCRSection = false;
+            }
+
+            // Procura por padrões como "Na 145", "Cr 1.8", "NT-proBNP 701" ou "Sífilis R", "Anti-HIV NR"
+            // Primeiro padrão: valores numéricos (com ou sem unidade)
+            let processedLine = line.replace(/\b([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9\-]*(?:\.[A-Za-z][A-Za-z0-9\-]*)?)\s+([\d,\.]+(?:\s*[a-z%\/]+)?)/gi, (match, exam, value) => {
+                // Se estamos na seção LCR e o exame é PT, usa PT.lcr para referência
+                let refKey = exam.trim();
+                if (inLCRSection && refKey === 'PT') {
+                    refKey = 'PT.lcr';
+                }
+                if (isAbnormal(refKey, value.trim())) {
+                    return `<span class="abnormal">${exam} ${value}</span>`;
+                }
+                return match;
+            });
+
+            // Segundo padrão: valores qualitativos (R, NR, Pos, Neg, IND, etc.)
+            processedLine = processedLine.replace(/\b([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9\-]*(?:\.[A-Za-z][A-Za-z0-9\-]*)?)\s+(R|NR|Pos|Neg|IND|Reagente|Não Reagente)\b/gi, (match, exam, value) => {
+                // Evita processar se já está dentro de um span
+                if (match.includes('<span')) return match;
                 if (isAbnormal(exam.trim(), value.trim())) {
                     return `<span class="abnormal">${exam} ${value}</span>`;
                 }
                 return match;
             });
+
+            return processedLine;
         });
         resultContent.innerHTML = processedLines.join('\n');
     }
